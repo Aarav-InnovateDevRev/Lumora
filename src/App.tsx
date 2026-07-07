@@ -120,6 +120,16 @@ function App() {
           </div>
 
           {user.completedOnboarding && (
+            <div style={{ display: 'flex', gap: '8px', backgroundColor: '#f3f4f6', padding: '6px', borderRadius: '9999px' }}>
+              <button onClick={() => setCurrentPage('dashboard')} style={navStyle(currentPage === 'dashboard')}>Dashboard</button>
+              <button onClick={() => setCurrentPage('reflection')} style={navStyle(currentPage === 'reflection')}>Reflection</button>
+              <button onClick={() => setCurrentPage('ai')} style={navStyle(currentPage === 'ai')}>AI Mentor</button>
+              <button onClick={() => setCurrentPage('tree')} style={navStyle(currentPage === 'tree')}>Growth Tree</button>
+              <button onClick={() => setCurrentPage('career')} style={navStyle(currentPage === 'career')}>Career</button>
+            </div>
+          )}
+
+          {user.completedOnboarding && (
             <div style={{ display: 'flex', gap: '20px', fontSize: '18px', fontWeight: '600' }}>
               <span>🔥 {user.streak}</span>
               <span>🌱 {user.seeds}</span>
@@ -213,5 +223,6 @@ function App() {
 const inputStyle = { width: '100%', padding: '16px', marginBottom: '16px', borderRadius: '12px', border: '2px solid #fed7aa', fontSize: '17px' };
 const buttonStyle = { width: '100%', padding: '18px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '16px', fontSize: '19px', marginTop: '20px', cursor: 'pointer' };
 const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '20px', textAlign: 'center' as const, boxShadow: '0 10px 15px rgba(0,0,0,0.08)' };
+const navStyle = (active: boolean) => ({ padding: '10px 20px', borderRadius: '9999px', backgroundColor: active ? '#ea580c' : 'transparent', color: active ? 'white' : '#444', border: 'none', cursor: 'pointer' });
 
 export default App;
