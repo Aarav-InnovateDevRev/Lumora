@@ -17,6 +17,7 @@ function App() {
     completedOnboarding: false,
   });
 
+  const [idError, setIdError] = useState("");
   const [reflection, setReflection] = useState({
     studyHours: "",
     subjects: "",
@@ -38,36 +39,52 @@ function App() {
     }
   }, []);
 
+  const checkUserId = async (userId: string) => {
+    if (!userId) {
+      setIdError("");
+      return;
+    }
+    const { data } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (data) {
+      setIdError("This User ID is already taken!");
+    } else {
+      setIdError("");
+    }
+  };
+
   const finishOnboarding = async () => {
-    if (!user.name || !user.class || !user.goal) {
+    if (!user.id || !user.name || !user.class || !user.goal) {
       alert("Please fill all fields!");
       return;
     }
+    if (idError) {
+      alert("Choose a different User ID");
+      return;
+    }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('users')
       .insert([{
+        id: user.id,
         name: user.name,
         class: user.class,
         goal: user.goal,
         preferred_tone: user.preferredTone,
         student_type: user.studentType,
         study_feeling: user.studyFeeling
-      }])
-      .select();
+      }]);
 
     if (error) {
-      console.error(error);
-      alert("Error saving to database");
+      alert("Error creating user. Try different ID.");
       return;
     }
 
-    const newUser = { 
-      ...user, 
-      id: data[0].id, 
-      completedOnboarding: true 
-    };
-    
+    const newUser = { ...user, completedOnboarding: true };
     setUser(newUser);
     localStorage.setItem('lumoraUser', JSON.stringify(newUser));
     setCurrentPage('dashboard');
@@ -96,7 +113,6 @@ function App() {
       }]);
 
     if (error) {
-      console.error(error);
       alert("Error saving reflection");
       return;
     }
@@ -107,8 +123,8 @@ function App() {
       seeds: prev.seeds + 15
     }));
 
-    setHiddenDiscoveries(prev => [...prev, "New pattern detected!"]);
-    alert("Reflection saved to Supabase!");
+    setHiddenDiscoveries(prev => [...prev, "New pattern detected from your reflection!"]);
+    alert("Reflection saved successfully!");
     setCurrentPage('dashboard');
   };
 
@@ -143,8 +159,20 @@ function App() {
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
         {currentPage === 'onboarding' && (
           <div style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
-            <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Personalization Survey</h1>
-            <p style={{ textAlign: 'center', marginBottom: '40px', color: '#666' }}>Help Lumora understand you better</p>
+            <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Create Your Profile</h1>
+            <p style={{ textAlign: 'center', marginBottom: '30px', color: '#666' }}>Choose a unique User ID</p>
+
+            <input 
+              type="text" 
+              placeholder="Unique User ID (e.g. aarav09)" 
+              style={inputStyle} 
+              value={user.id} 
+              onChange={e => {
+                setUser(p => ({...p, id: e.target.value}));
+                checkUserId(e.target.value);
+              }} 
+            />
+            {idError && <p style={{ color: 'red', textAlign: 'center', marginBottom: '10px' }}>{idError}</p>}
 
             <input type="text" placeholder="Your Full Name" style={inputStyle} value={user.name} onChange={e => setUser(p => ({...p, name: e.target.value}))} />
             <input type="text" placeholder="Your Class" style={inputStyle} value={user.class} onChange={e => setUser(p => ({...p, class: e.target.value}))} />
@@ -174,7 +202,7 @@ function App() {
               <option value="Tired">Tired</option>
             </select>
 
-            <button onClick={finishOnboarding} style={buttonStyle}>Save Profile & Start Journey</button>
+            <button onClick={finishOnboarding} style={buttonStyle}>Create Profile & Start</button>
           </div>
         )}
 
