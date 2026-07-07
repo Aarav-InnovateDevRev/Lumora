@@ -106,15 +106,25 @@ function App() {
       return;
     }
 
+    // Update streak and seeds
+    const newStreak = user.streak + 1;
+    const newSeeds = user.seeds + 15;
+
     setUser(prev => ({
       ...prev,
-      streak: prev.streak + 1,
-      seeds: prev.seeds + 15
+      streak: newStreak,
+      seeds: newSeeds
     }));
 
+    // Add notifications
     addNotification("I found something interesting in your reflection today!");
-    setHiddenDiscoveries(prev => [...prev, "New pattern detected!"]);
-    alert("Reflection saved successfully!");
+    if (newStreak % 5 === 0) {
+      addNotification(`Congratulations! Your streak reached ${newStreak} days! 🌱`);
+    }
+
+    setHiddenDiscoveries(prev => [...prev, "New pattern: Consistency is improving!"]);
+
+    alert("Reflection saved successfully! Streak + Seeds updated.");
     setCurrentPage('dashboard');
   };
 
