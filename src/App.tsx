@@ -3,8 +3,6 @@ import { supabase } from './supabaseClient';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career'>('onboarding');
-  const [notifications, setNotifications] = useState<string[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false);
   
   const [user, setUser] = useState({
     id: "",
@@ -40,8 +38,16 @@ function App() {
     }
   }, []);
 
-  const addNotification = (message: string) => {
-    setNotifications(prev => [message, ...prev].slice(0, 5));
+  const requestNotificationPermission = () => {
+    if ("Notification" in window) {
+      Notification.requestPermission();
+    }
+  };
+
+  const sendBrowserNotification = (title: string, body: string) => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(title, { body, icon: '/favicon.svg' });
+    }
   };
 
   const finishOnboarding = async () => {
@@ -75,7 +81,6 @@ function App() {
     
     setUser(newUser);
     localStorage.setItem('lumoraUser', JSON.stringify(newUser));
-    addNotification("Welcome to Lumora! Your profile is ready.");
     setCurrentPage('dashboard');
   };
 
@@ -106,25 +111,17 @@ function App() {
       return;
     }
 
-    // Update streak and seeds
-    const newStreak = user.streak + 1;
-    const newSeeds = user.seeds + 15;
-
     setUser(prev => ({
       ...prev,
-      streak: newStreak,
-      seeds: newSeeds
+      streak: prev.streak + 1,
+      seeds: prev.seeds + 15
     }));
 
-    // Add notifications
-    addNotification("I found something interesting in your reflection today!");
-    if (newStreak % 5 === 0) {
-      addNotification(`Congratulations! Your streak reached ${newStreak} days! 🌱`);
-    }
+    // Browser Notification
+    sendBrowserNotification("Lumora", "I found something interesting in your reflection today!");
 
-    setHiddenDiscoveries(prev => [...prev, "New pattern: Consistency is improving!"]);
-
-    alert("Reflection saved successfully! Streak + Seeds updated.");
+    setHiddenDiscoveries(prev => [...prev, "New pattern detected from your reflection!"]);
+    alert("Reflection saved! Check notification.");
     setCurrentPage('dashboard');
   };
 
@@ -138,63 +135,13 @@ function App() {
           </div>
 
           {user.completedOnboarding && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)} 
-                style={{ fontSize: '26px', background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}
-              >
-                🛎️ 
-                {notifications.length > 0 && (
-                  <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: 'red', color: 'white', borderRadius: '50%', padding: '2px 6px', fontSize: '12px' }}>
-                    {notifications.length}
-                  </span>
-                )}
-              </button>
-
-              <div style={{ display: 'flex', gap: '8px', backgroundColor: '#f3f4f6', padding: '6px', borderRadius: '9999px' }}>
-                <button onClick={() => setCurrentPage('dashboard')} style={navStyle(currentPage === 'dashboard')}>Dashboard</button>
-                <button onClick={() => setCurrentPage('reflection')} style={navStyle(currentPage === 'reflection')}>Reflection</button>
-                <button onClick={() => setCurrentPage('ai')} style={navStyle(currentPage === 'ai')}>AI Mentor</button>
-                <button onClick={() => setCurrentPage('tree')} style={navStyle(currentPage === 'tree')}>Growth Tree</button>
-                <button onClick={() => setCurrentPage('career')} style={navStyle(currentPage === 'career')}>Career</button>
-              </div>
-
-              <div style={{ display: 'flex', gap: '20px', fontSize: '18px', fontWeight: '600' }}>
-                <span>🔥 {user.streak}</span>
-                <span>🌱 {user.seeds}</span>
-              </div>
+            <div style={{ display: 'flex', gap: '20px', fontSize: '18px', fontWeight: '600' }}>
+              <span>🔥 {user.streak}</span>
+              <span>🌱 {user.seeds}</span>
             </div>
           )}
         </div>
       </nav>
-
-      {/* Notifications Panel */}
-      {showNotifications && (
-        <div style={{
-          position: 'fixed',
-          top: '80px',
-          right: '30px',
-          backgroundColor: 'white',
-          padding: '20px',
-          borderRadius: '16px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-          zIndex: 200,
-          maxWidth: '320px',
-          maxHeight: '400px',
-          overflowY: 'auto'
-        }}>
-          <h4 style={{ marginBottom: '15px' }}>Notifications</h4>
-          {notifications.length === 0 ? (
-            <p>No new notifications</p>
-          ) : (
-            notifications.map((n, i) => (
-              <div key={i} style={{ padding: '12px', borderBottom: '1px solid #eee', marginBottom: '8px' }}>
-                {n}
-              </div>
-            ))
-          )}
-        </div>
-      )}
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
         {currentPage === 'onboarding' && (
@@ -270,6 +217,5 @@ function App() {
 const inputStyle = { width: '100%', padding: '16px', marginBottom: '16px', borderRadius: '12px', border: '2px solid #fed7aa', fontSize: '17px' };
 const buttonStyle = { width: '100%', padding: '18px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '16px', fontSize: '19px', marginTop: '20px', cursor: 'pointer' };
 const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '20px', textAlign: 'center' as const, boxShadow: '0 10px 15px rgba(0,0,0,0.08)' };
-const navStyle = (active: boolean) => ({ padding: '10px 20px', borderRadius: '9999px', backgroundColor: active ? '#ea580c' : 'transparent', color: active ? 'white' : '#444', border: 'none', cursor: 'pointer' });
 
 export default App;
