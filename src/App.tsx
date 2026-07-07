@@ -38,18 +38,6 @@ function App() {
     }
   }, []);
 
-  const requestNotificationPermission = () => {
-    if ("Notification" in window) {
-      Notification.requestPermission();
-    }
-  };
-
-  const sendBrowserNotification = (title: string, body: string) => {
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification(title, { body });
-    }
-  };
-
   const finishOnboarding = async () => {
     if (!user.name || !user.class || !user.goal) {
       alert("Please fill all fields!");
@@ -116,8 +104,6 @@ function App() {
       streak: prev.streak + 1,
       seeds: prev.seeds + 15
     }));
-
-    sendBrowserNotification("Lumora", "I found something interesting in your reflection today!");
 
     setHiddenDiscoveries(prev => [...prev, "New pattern detected from your reflection!"]);
     alert("Reflection saved! Streak and Seeds updated.");
@@ -199,6 +185,17 @@ function App() {
             <h2>Daily Reflection</h2>
             <input type="text" placeholder="Hours studied today" style={inputStyle} value={reflection.studyHours} onChange={e => setReflection(p => ({...p, studyHours: e.target.value}))} />
             <textarea placeholder="Subjects studied" style={{...inputStyle, height: '80px'}} value={reflection.subjects} onChange={e => setReflection(p => ({...p, subjects: e.target.value}))} />
+            <select style={inputStyle} value={reflection.mood} onChange={e => setReflection(p => ({...p, mood: e.target.value}))}>
+              <option value="Good">Good</option>
+              <option value="Okay">Okay</option>
+              <option value="Tired">Tired</option>
+              <option value="Motivated">Motivated</option>
+            </select>
+            <select style={inputStyle} value={reflection.confidence} onChange={e => setReflection(p => ({...p, confidence: e.target.value}))}>
+              <option value="High">High Confidence</option>
+              <option value="Medium">Medium Confidence</option>
+              <option value="Low">Low Confidence</option>
+            </select>
             <textarea placeholder="Wins today" style={{...inputStyle, height: '100px'}} value={reflection.wins} onChange={e => setReflection(p => ({...p, wins: e.target.value}))} />
             <textarea placeholder="Struggles" style={{...inputStyle, height: '100px'}} value={reflection.struggles} onChange={e => setReflection(p => ({...p, struggles: e.target.value}))} />
             <button onClick={saveReflection} style={buttonStyle}>Save Reflection</button>
