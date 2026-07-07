@@ -46,7 +46,7 @@ function App() {
 
   const sendBrowserNotification = (title: string, body: string) => {
     if ("Notification" in window && Notification.permission === "granted") {
-      new Notification(title, { body, icon: '/favicon.svg' });
+      new Notification(title, { body });
     }
   };
 
@@ -117,11 +117,10 @@ function App() {
       seeds: prev.seeds + 15
     }));
 
-    // Browser Notification
     sendBrowserNotification("Lumora", "I found something interesting in your reflection today!");
 
     setHiddenDiscoveries(prev => [...prev, "New pattern detected from your reflection!"]);
-    alert("Reflection saved! Check notification.");
+    alert("Reflection saved! Streak and Seeds updated.");
     setCurrentPage('dashboard');
   };
 
