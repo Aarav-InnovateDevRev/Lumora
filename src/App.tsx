@@ -230,7 +230,42 @@ function App() {
   );
 }
 
-const inputStyle = { width: '100%', padding: '16px', marginBottom: '16px', borderRadius: '12px', border: '2px solid #fed7aa', fontSize: '17px' };
-const buttonStyle = { width: '100%', padding: '18px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '16px', fontSize: '19px', marginTop: '20px', cursor: 'pointer' };
+const inputStyle = { 
+  width: '100%', 
+  padding: '16px', 
+  marginBottom: '16px', 
+  borderRadius: '12px', 
+  border: '2px solid #fed7aa', 
+  fontSize: '17px' 
+};
+
+const buttonStyle = { 
+  width: '100%', 
+  padding: '18px', 
+  backgroundColor: '#ea580c', 
+  color: 'white', 
+  border: 'none', 
+  borderRadius: '16px', 
+  fontSize: '19px', 
+  marginTop: '20px', 
+  cursor: 'pointer' 
+};
+
+const cardStyle = { 
+  backgroundColor: 'white', 
+  padding: '30px', 
+  borderRadius: '20px', 
+  textAlign: 'center' as const, 
+  boxShadow: '0 10px 15px rgba(0,0,0,0.08)' 
+};
+
+const navStyle = (active: boolean) => ({ 
+  padding: '10px 20px', 
+  borderRadius: '9999px', 
+  backgroundColor: active ? '#ea580c' : 'transparent', 
+  color: active ? 'white' : '#444', 
+  border: 'none', 
+  cursor: 'pointer' 
+});
 
 export default App;
