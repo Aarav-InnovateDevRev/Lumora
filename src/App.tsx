@@ -151,7 +151,7 @@ function App() {
         {currentPage === 'login' && (
           <div style={{ maxWidth: '400px', margin: '100px auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
             <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Login to Lumora</h1>
-            <input type="text" placeholder="User ID" style={inputStyle} value={loginId} onChange={e => setLoginId(e.target.value)} />
+            <input type="text" placeholder="User ID (e.g. aarav09)" style={inputStyle} value={loginId} onChange={e => setLoginId(e.target.value)} />
             <input type="password" placeholder="Password" style={inputStyle} value={loginPassword} onChange={e => setLoginPassword(e.target.value)} />
             {loginError && <p style={{ color: 'red', textAlign: 'center' }}>{loginError}</p>}
             <button onClick={handleLogin} style={buttonStyle}>Login</button>
@@ -230,42 +230,8 @@ function App() {
   );
 }
 
-const inputStyle = { 
-  width: '100%', 
-  padding: '16px', 
-  marginBottom: '16px', 
-  borderRadius: '12px', 
-  border: '2px solid #fed7aa', 
-  fontSize: '17px' 
-};
-
-const buttonStyle = { 
-  width: '100%', 
-  padding: '18px', 
-  backgroundColor: '#ea580c', 
-  color: 'white', 
-  border: 'none', 
-  borderRadius: '16px', 
-  fontSize: '19px', 
-  marginTop: '20px', 
-  cursor: 'pointer' 
-};
-
-const cardStyle = { 
-  backgroundColor: 'white', 
-  padding: '30px', 
-  borderRadius: '20px', 
-  textAlign: 'center' as const, 
-  boxShadow: '0 10px 15px rgba(0,0,0,0.08)' 
-};
-
-const navStyle = (active: boolean) => ({ 
-  padding: '10px 20px', 
-  borderRadius: '9999px', 
-  backgroundColor: active ? '#ea580c' : 'transparent', 
-  color: active ? 'white' : '#444', 
-  border: 'none', 
-  cursor: 'pointer' 
-});
+const inputStyle = { width: '100%', padding: '16px', marginBottom: '16px', borderRadius: '12px', border: '2px solid #fed7aa', fontSize: '17px' };
+const buttonStyle = { width: '100%', padding: '18px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '16px', fontSize: '19px', marginTop: '20px', cursor: 'pointer' };
+const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '20px', textAlign: 'center' as const, boxShadow: '0 10px 15px rgba(0,0,0,0.08)' };
 
 export default App;
