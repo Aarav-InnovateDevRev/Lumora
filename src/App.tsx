@@ -2,8 +2,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career'>('onboarding');
+  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career'>('login');
   
+  const [loginId, setLoginId] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+
   const [user, setUser] = useState({
     id: "",
     name: "",
@@ -38,35 +42,57 @@ function App() {
     }
   }, []);
 
+  const handleLogin = async () => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', loginId)
+      .single();
+
+    if (error || !data) {
+      setLoginError("Invalid User ID");
+      return;
+    }
+
+    setUser({
+      id: data.id,
+      name: data.name,
+      class: data.class,
+      goal: data.goal,
+      preferredTone: data.preferred_tone,
+      studentType: data.student_type,
+      studyFeeling: data.study_feeling,
+      streak: 0,
+      seeds: 0,
+      completedOnboarding: true,
+    });
+    setCurrentPage('dashboard');
+  };
+
   const finishOnboarding = async () => {
-    if (!user.name || !user.class || !user.goal) {
+    if (!user.id || !user.name || !user.class || !user.goal) {
       alert("Please fill all fields!");
       return;
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('users')
       .insert([{
+        id: user.id,
         name: user.name,
         class: user.class,
         goal: user.goal,
         preferred_tone: user.preferredTone,
         student_type: user.studentType,
         study_feeling: user.studyFeeling
-      }])
-      .select();
+      }]);
 
     if (error) {
-      alert("Error creating user");
+      alert("User ID already exists!");
       return;
     }
 
-    const newUser = { 
-      ...user, 
-      id: data[0].id, 
-      completedOnboarding: true 
-    };
-    
+    const newUser = { ...user, completedOnboarding: true };
     setUser(newUser);
     localStorage.setItem('lumoraUser', JSON.stringify(newUser));
     setCurrentPage('dashboard');
@@ -118,32 +144,27 @@ function App() {
             <span style={{ fontSize: '36px' }}>🌱</span>
             <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#9a3412' }}>Lumora</h1>
           </div>
-
-          {user.completedOnboarding && (
-            <div style={{ display: 'flex', gap: '8px', backgroundColor: '#f3f4f6', padding: '6px', borderRadius: '9999px' }}>
-              <button onClick={() => setCurrentPage('dashboard')} style={navStyle(currentPage === 'dashboard')}>Dashboard</button>
-              <button onClick={() => setCurrentPage('reflection')} style={navStyle(currentPage === 'reflection')}>Reflection</button>
-              <button onClick={() => setCurrentPage('ai')} style={navStyle(currentPage === 'ai')}>AI Mentor</button>
-              <button onClick={() => setCurrentPage('tree')} style={navStyle(currentPage === 'tree')}>Growth Tree</button>
-              <button onClick={() => setCurrentPage('career')} style={navStyle(currentPage === 'career')}>Career</button>
-            </div>
-          )}
-
-          {user.completedOnboarding && (
-            <div style={{ display: 'flex', gap: '20px', fontSize: '18px', fontWeight: '600' }}>
-              <span>🔥 {user.streak}</span>
-              <span>🌱 {user.seeds}</span>
-            </div>
-          )}
         </div>
       </nav>
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
+        {currentPage === 'login' && (
+          <div style={{ maxWidth: '400px', margin: '100px auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
+            <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Login to Lumora</h1>
+            <input type="text" placeholder="User ID" style={inputStyle} value={loginId} onChange={e => setLoginId(e.target.value)} />
+            <input type="password" placeholder="Password" style={inputStyle} value={loginPassword} onChange={e => setLoginPassword(e.target.value)} />
+            {loginError && <p style={{ color: 'red', textAlign: 'center' }}>{loginError}</p>}
+            <button onClick={handleLogin} style={buttonStyle}>Login</button>
+            <p style={{ textAlign: 'center', marginTop: '20px' }}>Don't have an account? <button onClick={() => setCurrentPage('onboarding')} style={{ color: '#ea580c', background: 'none', border: 'none' }}>Create one</button></p>
+          </div>
+        )}
+
         {currentPage === 'onboarding' && (
           <div style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
             <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Create Your Profile</h1>
-            <p style={{ textAlign: 'center', marginBottom: '40px', color: '#666' }}>Help Lumora understand you better</p>
+            <p style={{ textAlign: 'center', marginBottom: '40px', color: '#666' }}>Choose unique User ID</p>
 
+            <input type="text" placeholder="Unique User ID (e.g. aarav09)" style={inputStyle} value={user.id} onChange={e => setUser(p => ({...p, id: e.target.value}))} />
             <input type="text" placeholder="Your Full Name" style={inputStyle} value={user.name} onChange={e => setUser(p => ({...p, name: e.target.value}))} />
             <input type="text" placeholder="Your Class" style={inputStyle} value={user.class} onChange={e => setUser(p => ({...p, class: e.target.value}))} />
             <input type="text" placeholder="Your Big Dream / Goal" style={inputStyle} value={user.goal} onChange={e => setUser(p => ({...p, goal: e.target.value}))} />
@@ -172,7 +193,7 @@ function App() {
               <option value="Tired">Tired</option>
             </select>
 
-            <button onClick={finishOnboarding} style={buttonStyle}>Save Profile & Start Journey</button>
+            <button onClick={finishOnboarding} style={buttonStyle}>Create Profile & Start</button>
           </div>
         )}
 
@@ -195,17 +216,6 @@ function App() {
             <h2>Daily Reflection</h2>
             <input type="text" placeholder="Hours studied today" style={inputStyle} value={reflection.studyHours} onChange={e => setReflection(p => ({...p, studyHours: e.target.value}))} />
             <textarea placeholder="Subjects studied" style={{...inputStyle, height: '80px'}} value={reflection.subjects} onChange={e => setReflection(p => ({...p, subjects: e.target.value}))} />
-            <select style={inputStyle} value={reflection.mood} onChange={e => setReflection(p => ({...p, mood: e.target.value}))}>
-              <option value="Good">Good</option>
-              <option value="Okay">Okay</option>
-              <option value="Tired">Tired</option>
-              <option value="Motivated">Motivated</option>
-            </select>
-            <select style={inputStyle} value={reflection.confidence} onChange={e => setReflection(p => ({...p, confidence: e.target.value}))}>
-              <option value="High">High Confidence</option>
-              <option value="Medium">Medium Confidence</option>
-              <option value="Low">Low Confidence</option>
-            </select>
             <textarea placeholder="Wins today" style={{...inputStyle, height: '100px'}} value={reflection.wins} onChange={e => setReflection(p => ({...p, wins: e.target.value}))} />
             <textarea placeholder="Struggles" style={{...inputStyle, height: '100px'}} value={reflection.struggles} onChange={e => setReflection(p => ({...p, struggles: e.target.value}))} />
             <button onClick={saveReflection} style={buttonStyle}>Save Reflection</button>
@@ -222,7 +232,5 @@ function App() {
 
 const inputStyle = { width: '100%', padding: '16px', marginBottom: '16px', borderRadius: '12px', border: '2px solid #fed7aa', fontSize: '17px' };
 const buttonStyle = { width: '100%', padding: '18px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '16px', fontSize: '19px', marginTop: '20px', cursor: 'pointer' };
-const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '20px', textAlign: 'center' as const, boxShadow: '0 10px 15px rgba(0,0,0,0.08)' };
-const navStyle = (active: boolean) => ({ padding: '10px 20px', borderRadius: '9999px', backgroundColor: active ? '#ea580c' : 'transparent', color: active ? 'white' : '#444', border: 'none', cursor: 'pointer' });
 
 export default App;
