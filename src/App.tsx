@@ -16,7 +16,7 @@ function App() {
     preferredTone: "Friendly",
     studentType: "Mixed",
     studyFeeling: "Focused",
-    password: "",           // Added password
+    password: "",
     streak: 0,
     seeds: 0,
   });
@@ -34,7 +34,6 @@ function App() {
     "You are building good daily habits 🌱",
   ]);
 
-  // Load saved user
   useEffect(() => {
     const saved = localStorage.getItem('lumoraUser');
     if (saved) {
@@ -52,11 +51,10 @@ function App() {
       .single();
 
     if (error || !data) {
-      setLoginError("❌ Invalid User ID. Try creating a new account.");
+      setLoginError("❌ Invalid User ID");
       return;
     }
 
-    // Simple password check (for MVP)
     if (data.password && data.password !== loginPassword) {
       setLoginError("❌ Wrong Password");
       return;
@@ -71,11 +69,10 @@ function App() {
       studentType: data.student_type || "Mixed",
       studyFeeling: data.study_feeling || "Focused",
       password: data.password || "",
-      streak: 5,
-      seeds: 120,
+      streak: data.streak || 5,
+      seeds: data.seeds || 120,
     });
     setCurrentPage('dashboard');
-    alert("✅ Login Successful!");
   };
 
   const finishOnboarding = async () => {
@@ -94,20 +91,18 @@ function App() {
         preferred_tone: user.preferredTone,
         student_type: user.studentType,
         study_feeling: user.studyFeeling,
-        password: user.password || "123456"   // default password for testing
+        password: user.password || "123456"
       }], { onConflict: 'id' });
 
     if (error) {
-      console.error("Supabase Error:", error);
-      alert(`❌ Error: ${error.message}\n\nTry a different User ID like: test${Date.now() % 10000}`);
+      alert(`❌ Error: ${error.message}`);
       return;
     }
 
-    const newUser = { ...user, completedOnboarding: true };
+    const newUser = { ...user };
     setUser(newUser);
     localStorage.setItem('lumoraUser', JSON.stringify(newUser));
-    
-    alert("✅ Profile Created Successfully!");
+    alert("✅ Profile Created!");
     setCurrentPage('dashboard');
   };
 
@@ -134,7 +129,7 @@ function App() {
       }]);
 
     if (error) {
-      alert(`❌ Save Error: ${error.message}`);
+      alert(`❌ ${error.message}`);
       return;
     }
 
@@ -144,7 +139,7 @@ function App() {
       seeds: prev.seeds + 15
     }));
 
-    setHiddenDiscoveries(prev => [...prev, "New growth pattern detected!"]);
+    setHiddenDiscoveries(prev => [...prev, "New growth pattern detected from today's reflection!"]);
     alert("✅ Reflection Saved! +1 Streak & +15 Seeds");
     setCurrentPage('dashboard');
   };
@@ -157,53 +152,60 @@ function App() {
             <span style={{ fontSize: '36px' }}>🌱</span>
             <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#9a3412' }}>Lumora</h1>
           </div>
+          
+          {currentPage !== 'login' && currentPage !== 'onboarding' && (
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button onClick={() => setCurrentPage('dashboard')} style={navButtonStyle}>🏠 Dashboard</button>
+              <button onClick={() => setCurrentPage('reflection')} style={navButtonStyle}>📝 Reflection</button>
+              <button onClick={() => setCurrentPage('ai')} style={navButtonStyle}>🤖 AI Mentor</button>
+              <button onClick={() => setCurrentPage('tree')} style={navButtonStyle}>🌳 Growth Tree</button>
+              <button onClick={() => setCurrentPage('career')} style={navButtonStyle}>🎯 Career</button>
+            </div>
+          )}
         </div>
       </nav>
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
+        {/* Login Page */}
         {currentPage === 'login' && (
           <div style={{ maxWidth: '420px', margin: '80px auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
             <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Welcome to Lumora</h1>
-            <input type="text" placeholder="User ID (e.g. aarav2026)" style={inputStyle} value={loginId} onChange={e => setLoginId(e.target.value)} />
+            <input type="text" placeholder="User ID" style={inputStyle} value={loginId} onChange={e => setLoginId(e.target.value)} />
             <input type="password" placeholder="Password" style={inputStyle} value={loginPassword} onChange={e => setLoginPassword(e.target.value)} />
-            {loginError && <p style={{ color: 'red', textAlign: 'center', fontWeight: 'bold' }}>{loginError}</p>}
+            {loginError && <p style={{ color: 'red', textAlign: 'center' }}>{loginError}</p>}
             <button onClick={handleLogin} style={buttonStyle}>Login</button>
-            <p style={{ textAlign: 'center', marginTop: '25px' }}>
-              New here? <button onClick={() => setCurrentPage('onboarding')} style={{ color: '#ea580c', background: 'none', border: 'none', fontSize: '17px' }}>Create Account</button>
+            <p style={{ textAlign: 'center', marginTop: '20px' }}>
+              New here? <button onClick={() => setCurrentPage('onboarding')} style={{color: '#ea580c', border: 'none', background: 'none'}}>Create Account</button>
             </p>
           </div>
         )}
 
+        {/* Onboarding */}
         {currentPage === 'onboarding' && (
           <div style={{ maxWidth: '620px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
             <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Create Your Profile</h1>
-            <p style={{ textAlign: 'center', marginBottom: '30px', color: '#666' }}>Choose a unique User ID</p>
+            <input type="text" placeholder="Unique User ID" style={inputStyle} value={user.id} onChange={e => setUser(p => ({...p, id: e.target.value}))} />
+            <input type="text" placeholder="Full Name" style={inputStyle} value={user.name} onChange={e => setUser(p => ({...p, name: e.target.value}))} />
+            <input type="text" placeholder="Class" style={inputStyle} value={user.class} onChange={e => setUser(p => ({...p, class: e.target.value}))} />
+            <input type="text" placeholder="Big Goal" style={inputStyle} value={user.goal} onChange={e => setUser(p => ({...p, goal: e.target.value}))} />
+            <input type="password" placeholder="Set Password" style={inputStyle} value={user.password} onChange={e => setUser(p => ({...p, password: e.target.value}))} />
 
-            <input type="text" placeholder="Unique User ID (e.g. aarav2026)" style={inputStyle} value={user.id} onChange={e => setUser(p => ({...p, id: e.target.value}))} />
-            <input type="text" placeholder="Your Full Name" style={inputStyle} value={user.name} onChange={e => setUser(p => ({...p, name: e.target.value}))} />
-            <input type="text" placeholder="Class (e.g. 9)" style={inputStyle} value={user.class} onChange={e => setUser(p => ({...p, class: e.target.value}))} />
-            <input type="text" placeholder="Your Big Goal / Dream" style={inputStyle} value={user.goal} onChange={e => setUser(p => ({...p, goal: e.target.value}))} />
-            <input type="password" placeholder="Set Password (for future login)" style={inputStyle} value={user.password} onChange={e => setUser(p => ({...p, password: e.target.value}))} />
-
-            {/* Other fields */}
-            <label style={{ display: 'block', margin: '15px 0 8px' }}>Preferred AI Tone</label>
+            <label>Preferred AI Tone</label>
             <select style={inputStyle} value={user.preferredTone} onChange={e => setUser(p => ({...p, preferredTone: e.target.value}))}>
-              <option value="Friendly">Friendly</option>
-              <option value="Coach">Coach</option>
-              <option value="Mentor">Mentor</option>
+              <option>Friendly</option><option>Coach</option><option>Mentor</option>
             </select>
 
-            <button onClick={finishOnboarding} style={buttonStyle}>Create Profile & Start Journey</button>
+            <button onClick={finishOnboarding} style={buttonStyle}>Create Profile & Start</button>
           </div>
         )}
 
-        {/* Dashboard, Reflection, etc. same as before */}
+        {/* Dashboard */}
         {currentPage === 'dashboard' && (
           <div>
             <h1 style={{ textAlign: 'center', fontSize: '42px', color: '#9a3412' }}>Welcome back, {user.name}!</h1>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '25px', marginTop: '40px' }}>
-              <div style={cardStyle}><h3>🔥 Streak</h3><p style={{fontSize: '52px', fontWeight: 'bold'}}>{user.streak} days</p></div>
-              <div style={cardStyle}><h3>🌱 Seeds</h3><p style={{fontSize: '52px', fontWeight: 'bold'}}>{user.seeds}</p></div>
+              <div style={cardStyle}><h3>🔥 Current Streak</h3><p style={{fontSize: '52px', fontWeight: 'bold'}}>{user.streak} days</p></div>
+              <div style={cardStyle}><h3>🌱 Seeds Earned</h3><p style={{fontSize: '52px', fontWeight: 'bold'}}>{user.seeds}</p></div>
             </div>
             <div style={{ marginTop: '50px' }}>
               <h3>Hidden Discoveries</h3>
@@ -212,20 +214,22 @@ function App() {
           </div>
         )}
 
+        {/* Reflection */}
         {currentPage === 'reflection' && (
           <div style={{ maxWidth: '700px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px' }}>
             <h2>Daily Reflection</h2>
             <input type="text" placeholder="Hours studied today" style={inputStyle} value={reflection.studyHours} onChange={e => setReflection(p => ({...p, studyHours: e.target.value}))} />
             <textarea placeholder="Subjects studied (comma separated)" style={{...inputStyle, height: '80px'}} value={reflection.subjects} onChange={e => setReflection(p => ({...p, subjects: e.target.value}))} />
             <textarea placeholder="Wins today" style={{...inputStyle, height: '100px'}} value={reflection.wins} onChange={e => setReflection(p => ({...p, wins: e.target.value}))} />
-            <textarea placeholder="Struggles / Challenges" style={{...inputStyle, height: '100px'}} value={reflection.struggles} onChange={e => setReflection(p => ({...p, struggles: e.target.value}))} />
+            <textarea placeholder="Struggles" style={{...inputStyle, height: '100px'}} value={reflection.struggles} onChange={e => setReflection(p => ({...p, struggles: e.target.value}))} />
             <button onClick={saveReflection} style={buttonStyle}>Save Reflection</button>
           </div>
         )}
 
-        {currentPage === 'ai' && <div style={{ textAlign: 'center', padding: '120px', fontSize: '26px' }}>🤖 AI Mentor - Coming Soon</div>}
-        {currentPage === 'tree' && <div style={{ textAlign: 'center', padding: '120px' }}><div style={{fontSize: '180px'}}>🌳</div><h2>Your Growth Tree</h2></div>}
-        {currentPage === 'career' && <div style={{ textAlign: 'center', padding: '120px' }}>🎯 Career Companion - Coming Soon</div>}
+        {/* Other Pages */}
+        {currentPage === 'ai' && <div style={{ textAlign: 'center', padding: '120px', fontSize: '28px' }}>🤖 AI Mentor Chat - Coming Soon</div>}
+        {currentPage === 'tree' && <div style={{ textAlign: 'center', padding: '120px' }}><div style={{fontSize: '200px'}}>🌳</div><h2>Your Growth Tree</h2></div>}
+        {currentPage === 'career' && <div style={{ textAlign: 'center', padding: '120px' }}>🎯 Career Roadmap & Companion - Coming Soon</div>}
       </div>
     </div>
   );
@@ -234,5 +238,6 @@ function App() {
 const inputStyle = { width: '100%', padding: '16px', marginBottom: '16px', borderRadius: '12px', border: '2px solid #fed7aa', fontSize: '17px' };
 const buttonStyle = { width: '100%', padding: '18px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '16px', fontSize: '19px', marginTop: '20px', cursor: 'pointer' };
 const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '20px', textAlign: 'center' as const, boxShadow: '0 10px 15px rgba(0,0,0,0.08)' };
+const navButtonStyle = { padding: '10px 18px', backgroundColor: '#9a3412', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '15px' };
 
 export default App;
