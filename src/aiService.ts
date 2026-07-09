@@ -1,17 +1,30 @@
+import { supabase } from './supabaseClient';
+
 const GROQ_API_KEY = "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";
 
 export const getAIMentorResponse = async (userData: any, userMessage: string = "") => {
   try {
+    // Get latest reflection for personalization
+    const { data: latestReflection } = await supabase
+      .from('daily_reflections')
+      .select('*')
+      .eq('user_id', userData.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
     const systemPrompt = `
 You are Lumora's friendly AI Growth Mentor for Class 9 students.
-User Info:
+
+User Profile:
 - Name: ${userData.name}
 - Class: ${userData.class}
-- Big Goal: ${userData.goal}
+- Goal: ${userData.goal}
 - Study Feeling: ${userData.studyFeeling}
-- Preferred Tone: ${userData.preferredTone || "Friendly"}
 
-Be encouraging, practical, and personalized. Give actionable advice.
+Latest Reflection: ${latestReflection ? JSON.stringify(latestReflection) : "No recent reflection yet"}
+
+Give encouraging, practical and personalized advice.
 `;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -24,7 +37,7 @@ Be encouraging, practical, and personalized. Give actionable advice.
         model: "llama3-8b-8192",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage || "Give me personalized daily growth advice and insights." }
+          { role: "user", content: userMessage || "Give me personalized daily growth advice based on my profile." }
         ],
         temperature: 0.7,
         max_tokens: 700
@@ -35,6 +48,6 @@ Be encouraging, practical, and personalized. Give actionable advice.
     return data.choices[0].message.content;
   } catch (error) {
     console.error("AI Error:", error);
-    return "Sorry, I'm having trouble connecting right now. Please try again later 🌱";
+    return "Sorry, I'm having trouble connecting right now. Try again later 🌱";
   }
 };
