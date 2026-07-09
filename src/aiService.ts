@@ -1,10 +1,14 @@
 import { supabase } from './supabaseClient';
 
-const GROQ_API_KEY = "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";
-
 export const getAIMentorResponse = async (userData: any, userMessage: string = "") => {
   try {
-    // Get latest reflection for personalization
+    // @ts-ignore
+    const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
+
+    if (!GROQ_API_KEY) {
+      return "API key is not configured. Please check .env file.";
+    }
+
     const { data: latestReflection } = await supabase
       .from('daily_reflections')
       .select('*')
@@ -23,8 +27,6 @@ User Profile:
 - Study Feeling: ${userData.studyFeeling}
 
 Latest Reflection: ${latestReflection ? JSON.stringify(latestReflection) : "No recent reflection yet"}
-
-Give encouraging, practical and personalized advice.
 `;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -37,7 +39,7 @@ Give encouraging, practical and personalized advice.
         model: "llama3-8b-8192",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage || "Give me personalized daily growth advice based on my profile." }
+          { role: "user", content: userMessage || "Give me personalized daily growth advice." }
         ],
         temperature: 0.7,
         max_tokens: 700
