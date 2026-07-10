@@ -152,11 +152,10 @@ function App() {
 
   const getAIAdvice = async () => {
   setIsLoading(true);
-  const responseText = await getAIMentorResponse(user, userMessage || "");
+  const responseText = await getAIMentorResponse();
   setAiResponse(responseText);
   setIsLoading(false);
 };
-
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f1e9', fontFamily: 'system-ui, sans-serif' }}>
       <nav style={{ backgroundColor: 'white', padding: '16px 24px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 100 }}>

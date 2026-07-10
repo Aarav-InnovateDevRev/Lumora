@@ -60,9 +60,7 @@ Latest Reflection: ${latestReflection ? JSON.stringify(latestReflection) : "No r
 };
  */
 
-import { supabase } from './supabaseClient';
-
-export const getAIMentorResponse = async (userData: any, userMessage: string = "") => {
+export const getAIMentorResponse = async (userMessage: string = "") => {
   try {
     //@ts-ignore
     const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
