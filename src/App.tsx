@@ -3,28 +3,35 @@ import { supabase } from './supabaseClient';
 import { getAIMentorResponse } from './aiService';
 
 function App() {
+  // ====================== PAGE NAVIGATION ======================
   const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career'>('login');
-  
+
+  // ====================== LOGIN STATE ======================
   const [loginId, setLoginId] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
+  // ====================== USER PROFILE ======================
   const [user, setUser] = useState({
     id: "", name: "", class: "", goal: "", preferredTone: "Friendly",
     studentType: "Mixed", studyFeeling: "Focused", password: "",
     streak: 0, seeds: 0,
   });
 
+  // ====================== REFLECTION STATE ======================
   const [reflection, setReflection] = useState({
     studyHours: "", subjects: "", mood: "Good", confidence: "Medium", wins: "", struggles: "",
   });
 
   const [hiddenDiscoveries, setHiddenDiscoveries] = useState<string[]>(["You started your growth journey 🌱"]);
-  const [aiResponse, setAiResponse] = useState("Click 'Get Advice' to talk with your AI Mentor");
+
+  // ====================== AI CHAT STATE ======================
   const [userMessage, setUserMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState<{role: string, content: string}[]>([]);
+  const [messageLimit, setMessageLimit] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load user from localStorage
+  // Load saved user from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('lumoraUser');
     if (saved) {
@@ -33,21 +40,31 @@ function App() {
     }
   }, []);
 
-  // Daily Notification
+  // Daily Notification (every 24 hours)
   useEffect(() => {
     if ("Notification" in window && user.id) {
       Notification.requestPermission();
       const lastNotif = localStorage.getItem('lastNotificationDate');
       const today = new Date().toISOString().split('T')[0];
       if (lastNotif !== today) {
-        new Notification("🌱 Lumora Reminder", { 
-          body: `Hey ${user.name}, time for your daily reflection!` 
-        });
+        new Notification("🌱 Lumora Reminder", { body: `Hey ${user.name}, time for your daily reflection!` });
         localStorage.setItem('lastNotificationDate', today);
       }
     }
   }, [user.id]);
 
+  // Reset chat history every 24 hours
+  useEffect(() => {
+    const lastChatReset = localStorage.getItem('lastChatReset');
+    const today = new Date().toISOString().split('T')[0];
+    if (lastChatReset !== today) {
+      setChatHistory([]);
+      setMessageLimit(0);
+      localStorage.setItem('lastChatReset', today);
+    }
+  }, []);
+
+  // ====================== LOGIN FUNCTION ======================
   const handleLogin = async () => {
     setLoginError("");
     const { data, error } = await supabase
@@ -81,6 +98,7 @@ function App() {
     setCurrentPage('dashboard');
   };
 
+  // ====================== ONBOARDING FUNCTION ======================
   const finishOnboarding = async () => {
     if (!user.id || !user.name || !user.class || !user.goal) {
       alert("❌ Please fill all fields!");
@@ -112,6 +130,7 @@ function App() {
     setCurrentPage('dashboard');
   };
 
+  // ====================== REFLECTION FUNCTION ======================
   const saveReflection = async () => {
     const today = new Date().toISOString().split('T')[0];
     if (localStorage.getItem('lastReflectionDate') === today) {
@@ -150,22 +169,40 @@ function App() {
     setCurrentPage('dashboard');
   };
 
+  // ====================== AI CHAT FUNCTION ======================
   const getAIAdvice = async () => {
-  setIsLoading(true);
-  const responseText = await getAIMentorResponse(user, userMessage || "");
-  setAiResponse(responseText);
+    if (messageLimit >= 10) {
+      alert("You have reached the daily limit of 10 messages. Come back tomorrow! 🌱");
+      return;
+    }
 
-  // Save AI insight to hidden_patterns
-  await supabase.from('hidden_patterns').insert([{
-    user_id: user.id,
-    pattern: responseText.substring(0, 250),
-    importance: 8
-  }]);
+    setIsLoading(true);
 
-  setIsLoading(false);
-};
+    const responseText = await getAIMentorResponse(user, userMessage || "");
+
+    const newHistory = [
+      ...chatHistory,
+      { role: "user", content: userMessage },
+      { role: "assistant", content: responseText }
+    ];
+
+    setChatHistory(newHistory);
+    setMessageLimit(prev => prev + 1);
+    setUserMessage("");
+
+    // Save AI insight to database
+    await supabase.from('hidden_patterns').insert([{
+      user_id: user.id,
+      pattern: responseText.substring(0, 250),
+      importance: 8
+    }]);
+
+    setIsLoading(false);
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f1e9', fontFamily: 'system-ui, sans-serif' }}>
+      {/* NAVIGATION BAR */}
       <nav style={{ backgroundColor: 'white', padding: '16px 24px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -186,7 +223,7 @@ function App() {
       </nav>
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
-        {/* Login Page */}
+        {/* LOGIN PAGE */}
         {currentPage === 'login' && (
           <div style={{ maxWidth: '420px', margin: '80px auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
             <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Welcome to Lumora</h1>
@@ -198,7 +235,7 @@ function App() {
           </div>
         )}
 
-        {/* Onboarding */}
+        {/* ONBOARDING PAGE */}
         {currentPage === 'onboarding' && (
           <div style={{ maxWidth: '620px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
             <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Create Your Profile</h1>
@@ -221,7 +258,7 @@ function App() {
           </div>
         )}
 
-        {/* Dashboard */}
+        {/* DASHBOARD */}
         {currentPage === 'dashboard' && (
           <div>
             <h1 style={{ textAlign: 'center', fontSize: '42px', color: '#9a3412' }}>Welcome back, {user.name}!</h1>
@@ -236,7 +273,7 @@ function App() {
           </div>
         )}
 
-        {/* Reflection */}
+        {/* REFLECTION PAGE */}
         {currentPage === 'reflection' && (
           <div style={{ maxWidth: '700px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px' }}>
             <h2>Daily Reflection</h2>
@@ -266,14 +303,27 @@ function App() {
           </div>
         )}
 
-        {/* AI Mentor */}
+        {/* AI MENTOR PAGE */}
         {currentPage === 'ai' && (
           <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: 'white', padding: '40px', borderRadius: '24px' }}>
             <h2>🤖 Your AI Growth Mentor</h2>
-            <p>Personalized using your profile and latest reflections</p>
+            <p>Personalized using your profile and latest reflections (10 messages/day)</p>
+
+            <div style={{ marginBottom: '20px', maxHeight: '400px', overflowY: 'auto' }}>
+              {chatHistory.map((msg, i) => (
+                <div key={i} style={{
+                  marginBottom: '15px',
+                  padding: '15px',
+                  borderRadius: '12px',
+                  backgroundColor: msg.role === 'user' ? '#f0f0f0' : '#f8f1e9'
+                }}>
+                  <strong>{msg.role === 'user' ? 'You' : 'AI Mentor'}:</strong> {msg.content}
+                </div>
+              ))}
+            </div>
 
             <textarea 
-              placeholder="Ask anything... (e.g. How to improve focus?)" 
+              placeholder="Ask anything..." 
               style={{...inputStyle, height: '120px'}} 
               value={userMessage} 
               onChange={e => setUserMessage(e.target.value)}
@@ -283,13 +333,14 @@ function App() {
               {isLoading ? "AI is thinking..." : "Get Personalized Advice"}
             </button>
 
-            <div style={{ marginTop: '30px', padding: '25px', backgroundColor: '#f8f1e9', borderRadius: '16px', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
-              {aiResponse}
-            </div>
+            {messageLimit >= 10 && <p style={{color: 'red', marginTop: '10px'}}>Daily limit reached (10 messages). Come back tomorrow!</p>}
           </div>
         )}
 
+        {/* GROWTH TREE PAGE */}
         {currentPage === 'tree' && <div style={{ textAlign: 'center', padding: '120px' }}><div style={{fontSize: '200px'}}>🌳</div><h2>Your Growth Tree</h2></div>}
+
+        {/* CAREER PAGE */}
         {currentPage === 'career' && <div style={{ textAlign: 'center', padding: '120px' }}>🎯 Career Roadmap - Coming Soon</div>}
       </div>
     </div>
@@ -298,7 +349,7 @@ function App() {
 
 const inputStyle = { width: '100%', padding: '16px', marginBottom: '16px', borderRadius: '12px', border: '2px solid #fed7aa', fontSize: '17px' };
 const buttonStyle = { width: '100%', padding: '18px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '16px', fontSize: '19px', marginTop: '20px', cursor: 'pointer' };
-const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '20px', textAlign: 'center' as const, boxShadow: '0 10px 15px rgba(0,0,0,0.08)' };
 const navButtonStyle = { padding: '10px 18px', backgroundColor: '#9a3412', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '15px' };
+const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '20px', textAlign: 'center' as const, boxShadow: '0 10px 15px rgba(0,0,0,0.08)' };
 
 export default App;
