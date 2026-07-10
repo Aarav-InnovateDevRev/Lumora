@@ -152,8 +152,16 @@ function App() {
 
   const getAIAdvice = async () => {
   setIsLoading(true);
-  const responseText = await getAIMentorResponse();
+  const responseText = await getAIMentorResponse(user, userMessage || "");
   setAiResponse(responseText);
+
+  // Save AI insight to hidden_patterns
+  await supabase.from('hidden_patterns').insert([{
+    user_id: user.id,
+    pattern: responseText.substring(0, 250),
+    importance: 8
+  }]);
+
   setIsLoading(false);
 };
   return (
