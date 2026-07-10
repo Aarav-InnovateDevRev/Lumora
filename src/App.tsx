@@ -3,35 +3,29 @@ import { supabase } from './supabaseClient';
 import { getAIMentorResponse } from './aiService';
 
 function App() {
-  // ====================== PAGE NAVIGATION ======================
   const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career'>('login');
-
-  // ====================== LOGIN STATE ======================
+  
   const [loginId, setLoginId] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  // ====================== USER PROFILE ======================
   const [user, setUser] = useState({
     id: "", name: "", class: "", goal: "", preferredTone: "Friendly",
     studentType: "Mixed", studyFeeling: "Focused", password: "",
     streak: 0, seeds: 0,
   });
 
-  // ====================== REFLECTION STATE ======================
   const [reflection, setReflection] = useState({
     studyHours: "", subjects: "", mood: "Good", confidence: "Medium", wins: "", struggles: "",
   });
 
   const [hiddenDiscoveries, setHiddenDiscoveries] = useState<string[]>(["You started your growth journey 🌱"]);
-
-  // ====================== AI CHAT STATE ======================
   const [userMessage, setUserMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<{role: string, content: string}[]>([]);
   const [messageLimit, setMessageLimit] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load saved user from localStorage
+  // Load saved user
   useEffect(() => {
     const saved = localStorage.getItem('lumoraUser');
     if (saved) {
@@ -40,7 +34,7 @@ function App() {
     }
   }, []);
 
-  // Daily Notification (every 24 hours)
+  // Daily Notification
   useEffect(() => {
     if ("Notification" in window && user.id) {
       Notification.requestPermission();
@@ -64,7 +58,6 @@ function App() {
     }
   }, []);
 
-  // ====================== LOGIN FUNCTION ======================
   const handleLogin = async () => {
     setLoginError("");
     const { data, error } = await supabase
@@ -83,6 +76,13 @@ function App() {
       return;
     }
 
+    // Load streak and seeds from growth_profile
+    const { data: profile } = await supabase
+      .from('growth_profile')
+      .select('*')
+      .eq('user_id', loginId)
+      .single();
+
     setUser({
       id: data.id,
       name: data.name,
@@ -92,13 +92,12 @@ function App() {
       studentType: data.student_type || "Mixed",
       studyFeeling: data.study_feeling || "Focused",
       password: data.password || "",
-      streak: 0,
-      seeds: 0,
+      streak: profile ? profile.current_streak : 0,
+      seeds: profile ? profile.total_seeds : 0,
     });
     setCurrentPage('dashboard');
   };
 
-  // ====================== ONBOARDING FUNCTION ======================
   const finishOnboarding = async () => {
     if (!user.id || !user.name || !user.class || !user.goal) {
       alert("❌ Please fill all fields!");
@@ -130,7 +129,6 @@ function App() {
     setCurrentPage('dashboard');
   };
 
-  // ====================== REFLECTION FUNCTION ======================
   const saveReflection = async () => {
     const today = new Date().toISOString().split('T')[0];
     if (localStorage.getItem('lastReflectionDate') === today) {
@@ -158,10 +156,22 @@ function App() {
       return;
     }
 
+    const newStreak = user.streak + 1;
+    const newSeeds = user.seeds + 15;
+
+    // Update growth_profile
+    await supabase.from('growth_profile').upsert([{
+      user_id: user.id,
+      total_seeds: newSeeds,
+      current_streak: newStreak,
+      longest_streak: Math.max(user.streak, newStreak),
+      growth_score: Math.min(100, newStreak * 5 + newSeeds / 10)
+    }], { onConflict: 'user_id' });
+
     setUser(prev => ({
       ...prev,
-      streak: prev.streak + 1,
-      seeds: prev.seeds + 15
+      streak: newStreak,
+      seeds: newSeeds
     }));
 
     setHiddenDiscoveries(prev => [...prev, `Reflection saved! Mood: ${reflection.mood}`]);
@@ -169,7 +179,6 @@ function App() {
     setCurrentPage('dashboard');
   };
 
-  // ====================== AI CHAT FUNCTION ======================
   const getAIAdvice = async () => {
     if (messageLimit >= 10) {
       alert("You have reached the daily limit of 10 messages. Come back tomorrow! 🌱");
@@ -190,7 +199,7 @@ function App() {
     setMessageLimit(prev => prev + 1);
     setUserMessage("");
 
-    // Save AI insight to database
+    // Save AI insight
     await supabase.from('hidden_patterns').insert([{
       user_id: user.id,
       pattern: responseText.substring(0, 250),
@@ -202,7 +211,6 @@ function App() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f1e9', fontFamily: 'system-ui, sans-serif' }}>
-      {/* NAVIGATION BAR */}
       <nav style={{ backgroundColor: 'white', padding: '16px 24px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -223,7 +231,6 @@ function App() {
       </nav>
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
-        {/* LOGIN PAGE */}
         {currentPage === 'login' && (
           <div style={{ maxWidth: '420px', margin: '80px auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
             <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Welcome to Lumora</h1>
@@ -235,7 +242,6 @@ function App() {
           </div>
         )}
 
-        {/* ONBOARDING PAGE */}
         {currentPage === 'onboarding' && (
           <div style={{ maxWidth: '620px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
             <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Create Your Profile</h1>
@@ -258,7 +264,6 @@ function App() {
           </div>
         )}
 
-        {/* DASHBOARD */}
         {currentPage === 'dashboard' && (
           <div>
             <h1 style={{ textAlign: 'center', fontSize: '42px', color: '#9a3412' }}>Welcome back, {user.name}!</h1>
@@ -273,7 +278,6 @@ function App() {
           </div>
         )}
 
-        {/* REFLECTION PAGE */}
         {currentPage === 'reflection' && (
           <div style={{ maxWidth: '700px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px' }}>
             <h2>Daily Reflection</h2>
@@ -303,7 +307,6 @@ function App() {
           </div>
         )}
 
-        {/* AI MENTOR PAGE */}
         {currentPage === 'ai' && (
           <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: 'white', padding: '40px', borderRadius: '24px' }}>
             <h2>🤖 Your AI Growth Mentor</h2>
@@ -337,10 +340,7 @@ function App() {
           </div>
         )}
 
-        {/* GROWTH TREE PAGE */}
         {currentPage === 'tree' && <div style={{ textAlign: 'center', padding: '120px' }}><div style={{fontSize: '200px'}}>🌳</div><h2>Your Growth Tree</h2></div>}
-
-        {/* CAREER PAGE */}
         {currentPage === 'career' && <div style={{ textAlign: 'center', padding: '120px' }}>🎯 Career Roadmap - Coming Soon</div>}
       </div>
     </div>
