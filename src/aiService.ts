@@ -2,6 +2,7 @@
 
 export const getAIMentorResponse = async (userData: any, userMessage: string = "") => {
   try {
+  //@ts-ignore
     const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
 
     if (!GROQ_API_KEY || GROQ_API_KEY.length < 10) {
