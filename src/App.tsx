@@ -152,10 +152,10 @@ function App() {
 
   const getAIAdvice = async () => {
   setIsLoading(true);
-  const responseText = await getAIMentorResponse();
+  const responseText = await getAIMentorResponse(user, userMessage || "");
   setAiResponse(responseText);
   setIsLoading(false);
-  };
+};
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f1e9', fontFamily: 'system-ui, sans-serif' }}>

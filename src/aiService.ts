@@ -60,13 +60,15 @@ Latest Reflection: ${latestReflection ? JSON.stringify(latestReflection) : "No r
 };
  */
 
-export const getAIMentorResponse = async () => {
+import { supabase } from './supabaseClient';
+
+export const getAIMentorResponse = async (userData: any, userMessage: string = "") => {
   try {
     //@ts-ignore
     const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
 
     if (!GROQ_API_KEY) {
-      return "API key missing.";
+      return "API key is missing. Check Vercel Environment Variables.";
     }
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -76,20 +78,21 @@ export const getAIMentorResponse = async () => {
         "Authorization": `Bearer ${GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: "llama3-8b-8192",
-        messages: [{ role: "user", content: "Say hello as Lumora AI Mentor." }],
-        max_tokens: 50
+        model: "llama-3.1-8b-instant",
+        messages: [{ role: "user", content: userMessage || "Give a short greeting as Lumora AI Mentor." }],
+        temperature: 0.7,
+        max_tokens: 300
       })
     });
 
     if (!response.ok) {
-      const text = await response.text();
-      return `Groq Error ${response.status}: ${text}`;
+      return `Groq Error ${response.status}`;
     }
 
     const data = await response.json();
     return data.choices[0].message.content;
   } catch (error) {
-    return "Connection error.";
+    console.error("AI Error:", error);
+    return "Sorry, I'm having trouble connecting right now. Try again later 🌱";
   }
 };
