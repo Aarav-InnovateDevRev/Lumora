@@ -1,12 +1,11 @@
-import { supabase } from './supabaseClient';
+/* import { supabase } from './supabaseClient';
 
 export const getAIMentorResponse = async (userData: any, userMessage: string = "") => {
   try {
-    // @ts-ignore
     const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
 
-    if (!GROQ_API_KEY) {
-      return "API key is not configured. Please check .env file.";
+    if (!GROQ_API_KEY || GROQ_API_KEY.length < 10) {
+      return "API key is not properly configured.";
     }
 
     const { data: latestReflection } = await supabase
@@ -17,8 +16,7 @@ export const getAIMentorResponse = async (userData: any, userMessage: string = "
       .limit(1)
       .single();
 
-    const systemPrompt = `
-You are Lumora's friendly AI Growth Mentor for Class 9 students.
+    const systemPrompt = `You are Lumora's friendly AI Growth Mentor for Class 9 students.
 
 User Profile:
 - Name: ${userData.name}
@@ -33,23 +31,63 @@ Latest Reflection: ${latestReflection ? JSON.stringify(latestReflection) : "No r
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${GROQ_API_KEY}`
+        "Authorization": `Bearer ${GROQ_API_KEY.trim()}`
       },
       body: JSON.stringify({
         model: "llama3-8b-8192",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage || "Give me personalized daily growth advice." }
+          { role: "user", content: userMessage || "Give me personalized daily growth advice based on my profile." }
         ],
         temperature: 0.7,
-        max_tokens: 700
+        max_tokens: 600
       })
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Groq Error:", response.status, errorText);
+      return `API Error: ${response.status} - Try again later`;
+    }
 
     const data = await response.json();
     return data.choices[0].message.content;
   } catch (error) {
     console.error("AI Error:", error);
     return "Sorry, I'm having trouble connecting right now. Try again later 🌱";
+  }
+};
+ */
+
+export const getAIMentorResponse = async () => {
+  try {
+    // @ts-ignore
+    const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
+
+    if (!GROQ_API_KEY) {
+      return "API key is missing from Vercel Environment Variables.";
+    }
+
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama3-8b-8192",
+        messages: [{ role: "user", content: "Say hello as Lumora AI Mentor." }],
+        max_tokens: 50
+      })
+    });
+
+    if (!response.ok) {
+      return `Groq Error: ${response.status} - Check your API key in Vercel`;
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    return "Connection error. Check console.";
   }
 };
