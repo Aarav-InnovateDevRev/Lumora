@@ -25,7 +25,6 @@ function App() {
   const [messageLimit, setMessageLimit] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load saved user
   useEffect(() => {
     const saved = localStorage.getItem('lumoraUser');
     if (saved) {
@@ -34,7 +33,6 @@ function App() {
     }
   }, []);
 
-  // Daily Notification
   useEffect(() => {
     if ("Notification" in window && user.id) {
       Notification.requestPermission();
@@ -47,7 +45,6 @@ function App() {
     }
   }, [user.id]);
 
-  // Reset chat history every 24 hours
   useEffect(() => {
     const lastChatReset = localStorage.getItem('lastChatReset');
     const today = new Date().toISOString().split('T')[0];
@@ -76,7 +73,6 @@ function App() {
       return;
     }
 
-    // Load streak and seeds from growth_profile
     const { data: profile } = await supabase
       .from('growth_profile')
       .select('*')
@@ -159,7 +155,6 @@ function App() {
     const newStreak = user.streak + 1;
     const newSeeds = user.seeds + 15;
 
-    // Update growth_profile
     await supabase.from('growth_profile').upsert([{
       user_id: user.id,
       total_seeds: newSeeds,
@@ -199,7 +194,6 @@ function App() {
     setMessageLimit(prev => prev + 1);
     setUserMessage("");
 
-    // Save AI insight
     await supabase.from('hidden_patterns').insert([{
       user_id: user.id,
       pattern: responseText.substring(0, 250),
