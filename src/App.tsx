@@ -203,34 +203,45 @@ function App() {
   };
 
   const getAIAdvice = async () => {
-    if (messageLimit >= 10) {
-      alert("You have reached the daily limit of 10 messages. Come back tomorrow! 🌱");
-      return;
-    }
+  if (messageLimit >= 10) {
+    alert("You have reached the daily limit of 10 messages. Come back tomorrow! 🌱");
+    return;
+  }
 
-    setIsLoading(true);
+  setIsLoading(true);
 
-    const responseText = await getAIMentorResponse(user, userMessage || "");
+  const result = await getAIMentorResponse(user, userMessage || "");
 
-    const newHistory = [
-      ...chatHistory,
-      { role: "user", content: userMessage },
-      { role: "assistant", content: responseText }
-    ];
+  const newHistory = [
+    ...chatHistory,
+    { role: "user", content: userMessage },
+    { role: "assistant", content: result.response }
+  ];
 
-    setChatHistory(newHistory);
-    setMessageLimit(prev => prev + 1);
-    setUserMessage("");
+  setChatHistory(newHistory);
+  setMessageLimit(prev => prev + 1);
+  setUserMessage("");
 
-    // Save AI insight
+  if (result.insight) {
     await supabase.from('hidden_patterns').insert([{
       user_id: user.id,
-      pattern: responseText.substring(0, 150), // shorter for box
+      pattern: result.insight,
       importance: 8
     }]);
 
-    setIsLoading(false);
-  };
+    // Reload discoveries
+    const { data: patterns } = await supabase
+      .from('hidden_patterns')
+      .select('pattern')
+      .eq('user_id', user.id)
+      .order('discovered_date', { ascending: false })
+      .limit(10);
+
+    setHiddenDiscoveries(patterns ? patterns.map(p => p.pattern) : ["You started your growth journey 🌱"]);
+  }
+
+  setIsLoading(false);
+};
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f1e9', fontFamily: 'system-ui, sans-serif' }}>
