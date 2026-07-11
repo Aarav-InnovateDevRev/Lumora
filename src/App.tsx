@@ -56,55 +56,63 @@ function App() {
   }, []);
 
   const handleLogin = async () => {
-  setLoginError("");
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', loginId)
-    .single();
+    setLoginError("");
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', loginId)
+      .single();
 
-  if (error || !data) {
-    setLoginError("❌ Invalid User ID");
-    return;
-  }
+    if (error || !data) {
+      setLoginError("❌ Invalid User ID");
+      return;
+    }
 
-  if (data.password && data.password !== loginPassword) {
-    setLoginError("❌ Wrong Password");
-    return;
-  }
+    if (data.password && data.password !== loginPassword) {
+      setLoginError("❌ Wrong Password");
+      return;
+    }
 
-  // Load streak and seeds from growth_profile
-  const { data: profile } = await supabase
-    .from('growth_profile')
-    .select('*')
-    .eq('user_id', loginId)
-    .single();
+    const { data: profile } = await supabase
+      .from('growth_profile')
+      .select('*')
+      .eq('user_id', loginId)
+      .single();
 
-  // Create growth_profile if not exists
-  if (!profile) {
-    await supabase.from('growth_profile').insert([{
-      user_id: loginId,
-      total_seeds: 0,
-      current_streak: 0,
-      longest_streak: 0,
-      growth_score: 0
-    }]);
-  }
+    if (!profile) {
+      await supabase.from('growth_profile').insert([{
+        user_id: loginId,
+        total_seeds: 0,
+        current_streak: 0,
+        longest_streak: 0,
+        growth_score: 0
+      }]);
+    }
 
-  setUser({
-    id: data.id,
-    name: data.name,
-    class: data.class,
-    goal: data.goal,
-    preferredTone: data.preferred_tone || "Friendly",
-    studentType: data.student_type || "Mixed",
-    studyFeeling: data.study_feeling || "Focused",
-    password: data.password || "",
-    streak: profile ? profile.current_streak : 0,
-    seeds: profile ? profile.total_seeds : 0,
-  });
-  setCurrentPage('dashboard');
-};
+    // Load hidden discoveries
+    const { data: patterns } = await supabase
+      .from('hidden_patterns')
+      .select('pattern')
+      .eq('user_id', loginId)
+      .order('discovered_date', { ascending: false })
+      .limit(10);
+
+    setHiddenDiscoveries(patterns ? patterns.map(p => p.pattern) : ["You started your growth journey 🌱"]);
+
+    setUser({
+      id: data.id,
+      name: data.name,
+      class: data.class,
+      goal: data.goal,
+      preferredTone: data.preferred_tone || "Friendly",
+      studentType: data.student_type || "Mixed",
+      studyFeeling: data.study_feeling || "Focused",
+      password: data.password || "",
+      streak: profile ? profile.current_streak : 0,
+      seeds: profile ? profile.total_seeds : 0,
+    });
+    setCurrentPage('dashboard');
+  };
 
   const finishOnboarding = async () => {
     if (!user.id || !user.name || !user.class || !user.goal) {
@@ -129,6 +137,14 @@ function App() {
       alert(`❌ Error: ${error.message}`);
       return;
     }
+
+    await supabase.from('growth_profile').insert([{
+      user_id: user.id,
+      total_seeds: 0,
+      current_streak: 0,
+      longest_streak: 0,
+      growth_score: 0
+    }]);
 
     const newUser = { ...user, streak: 0, seeds: 0 };
     setUser(newUser);
@@ -206,9 +222,10 @@ function App() {
     setMessageLimit(prev => prev + 1);
     setUserMessage("");
 
+    // Save AI insight
     await supabase.from('hidden_patterns').insert([{
       user_id: user.id,
-      pattern: responseText.substring(0, 250),
+      pattern: responseText.substring(0, 150), // shorter for box
       importance: 8
     }]);
 

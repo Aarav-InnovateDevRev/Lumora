@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient';
 
 export const getAIMentorResponse = async (userData: any, userMessage: string = "") => {
   try {
-    //@ts-ignore
+    // @ts-ignore
     const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
 
     if (!GROQ_API_KEY) {
@@ -40,7 +40,7 @@ Latest Reflection: ${latestReflection ? JSON.stringify(latestReflection) : "No r
         model: "llama-3.1-8b-instant",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage || "Give me personalized daily growth advice and insights." }
+          { role: "user", content: userMessage || "Give me personalized daily growth advice." }
         ],
         temperature: 0.7,
         max_tokens: 600
