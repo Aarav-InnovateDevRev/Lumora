@@ -56,43 +56,55 @@ function App() {
   }, []);
 
   const handleLogin = async () => {
-    setLoginError("");
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', loginId)
-      .single();
+  setLoginError("");
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', loginId)
+    .single();
 
-    if (error || !data) {
-      setLoginError("❌ Invalid User ID");
-      return;
-    }
+  if (error || !data) {
+    setLoginError("❌ Invalid User ID");
+    return;
+  }
 
-    if (data.password && data.password !== loginPassword) {
-      setLoginError("❌ Wrong Password");
-      return;
-    }
+  if (data.password && data.password !== loginPassword) {
+    setLoginError("❌ Wrong Password");
+    return;
+  }
 
-    const { data: profile } = await supabase
-      .from('growth_profile')
-      .select('*')
-      .eq('user_id', loginId)
-      .single();
+  // Load streak and seeds from growth_profile
+  const { data: profile } = await supabase
+    .from('growth_profile')
+    .select('*')
+    .eq('user_id', loginId)
+    .single();
 
-    setUser({
-      id: data.id,
-      name: data.name,
-      class: data.class,
-      goal: data.goal,
-      preferredTone: data.preferred_tone || "Friendly",
-      studentType: data.student_type || "Mixed",
-      studyFeeling: data.study_feeling || "Focused",
-      password: data.password || "",
-      streak: profile ? profile.current_streak : 0,
-      seeds: profile ? profile.total_seeds : 0,
-    });
-    setCurrentPage('dashboard');
-  };
+  // Create growth_profile if not exists
+  if (!profile) {
+    await supabase.from('growth_profile').insert([{
+      user_id: loginId,
+      total_seeds: 0,
+      current_streak: 0,
+      longest_streak: 0,
+      growth_score: 0
+    }]);
+  }
+
+  setUser({
+    id: data.id,
+    name: data.name,
+    class: data.class,
+    goal: data.goal,
+    preferredTone: data.preferred_tone || "Friendly",
+    studentType: data.student_type || "Mixed",
+    studyFeeling: data.study_feeling || "Focused",
+    password: data.password || "",
+    streak: profile ? profile.current_streak : 0,
+    seeds: profile ? profile.total_seeds : 0,
+  });
+  setCurrentPage('dashboard');
+};
 
   const finishOnboarding = async () => {
     if (!user.id || !user.name || !user.class || !user.goal) {
