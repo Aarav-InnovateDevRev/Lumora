@@ -54,7 +54,7 @@ Latest Reflection: ${latestReflection ? JSON.stringify(latestReflection) : "No r
     const data = await response.json();
     const fullResponse = data.choices[0].message.content;
 
-    // Generate short insight for hidden_patterns
+    // Generate short insight
     const insightResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -64,7 +64,7 @@ Latest Reflection: ${latestReflection ? JSON.stringify(latestReflection) : "No r
       body: JSON.stringify({
         model: "llama-3.1-8b-instant",
         messages: [
-          { role: "system", content: "Summarize the following advice into a short, inspiring insight (max 80 characters):" },
+          { role: "system", content: "Create a short, inspiring insight (max 80 characters) based on the following advice:" },
           { role: "user", content: fullResponse }
         ],
         temperature: 0.7,
