@@ -6,7 +6,7 @@ export const getAIMentorResponse = async (userData: any, userMessage: string = "
     const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
 
     if (!GROQ_API_KEY) {
-      return "API key is missing. Check Vercel Environment Variables.";
+      return { response: "API key is missing. Check Vercel Environment Variables.", insight: "" };
     }
 
     // Get latest reflection for personalization
@@ -43,18 +43,41 @@ Latest Reflection: ${latestReflection ? JSON.stringify(latestReflection) : "No r
           { role: "user", content: userMessage || "Give me personalized daily growth advice." }
         ],
         temperature: 0.7,
-        max_tokens: 600
+        max_tokens: 500
       })
     });
 
     if (!response.ok) {
-      return `Groq Error ${response.status}`;
+      return { response: `Groq Error ${response.status}`, insight: "" };
     }
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    const fullResponse = data.choices[0].message.content;
+
+    // Generate short insight for hidden_patterns
+    const insightResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          { role: "system", content: "Summarize the following advice into a short, inspiring insight (max 80 characters):" },
+          { role: "user", content: fullResponse }
+        ],
+        temperature: 0.7,
+        max_tokens: 80
+      })
+    });
+
+    const insightData = await insightResponse.json();
+    const shortInsight = insightData.choices[0].message.content.trim();
+
+    return { response: fullResponse, insight: shortInsight };
   } catch (error) {
     console.error("AI Error:", error);
-    return "Sorry, I'm having trouble connecting right now. Try again later 🌱";
+    return { response: "Sorry, I'm having trouble connecting right now. Try again later 🌱", insight: "" };
   }
 };
