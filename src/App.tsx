@@ -227,6 +227,15 @@ function App() {
             <span style={{ fontSize: '36px' }}>🌱</span>
             <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#9a3412' }}>Lumora</h1>
           </div>
+          
+          {currentPage !== 'login' && currentPage !== 'onboarding' && (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button onClick={() => setCurrentPage('dashboard')} style={navButtonStyle}>🏠</button>
+              <button onClick={() => setCurrentPage('reflection')} style={navButtonStyle}>📝</button>
+              <button onClick={() => setCurrentPage('ai')} style={navButtonStyle}>🤖</button>
+              <button onClick={() => setCurrentPage('tree')} style={navButtonStyle}>🌳</button>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -383,7 +392,7 @@ function App() {
 
 const inputStyle = { width: '100%', padding: '16px', marginBottom: '16px', borderRadius: '12px', border: '2px solid #fed7aa', fontSize: '17px' };
 const buttonStyle = { width: '100%', padding: '18px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '16px', fontSize: '19px', marginTop: '20px', cursor: 'pointer' };
-//const navButtonStyle = { padding: '10px 18px', backgroundColor: '#9a3412', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '15px' };
+const navButtonStyle = { padding: '10px 18px', backgroundColor: '#9a3412', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '15px' };
 const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '20px', textAlign: 'center' as const, boxShadow: '0 10px 15px rgba(0,0,0,0.08)' };
 
 export default App;
