@@ -33,28 +33,6 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    if ("Notification" in window && user.id) {
-      Notification.requestPermission();
-      const lastNotif = localStorage.getItem('lastNotificationDate');
-      const today = new Date().toISOString().split('T')[0];
-      if (lastNotif !== today) {
-        new Notification("🌱 Lumora Reminder", { body: `Hey ${user.name}, time for your daily reflection!` });
-        localStorage.setItem('lastNotificationDate', today);
-      }
-    }
-  }, [user.id]);
-
-  useEffect(() => {
-    const lastChatReset = localStorage.getItem('lastChatReset');
-    const today = new Date().toISOString().split('T')[0];
-    if (lastChatReset !== today) {
-      setChatHistory([]);
-      setMessageLimit(0);
-      localStorage.setItem('lastChatReset', today);
-    }
-  }, []);
-
   const handleLogin = async () => {
     setLoginError("");
     const { data, error } = await supabase
@@ -249,16 +227,6 @@ function App() {
             <span style={{ fontSize: '36px' }}>🌱</span>
             <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#9a3412' }}>Lumora</h1>
           </div>
-          
-          {currentPage !== 'login' && currentPage !== 'onboarding' && (
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <button onClick={() => setCurrentPage('dashboard')} style={navButtonStyle}>🏠 Dashboard</button>
-              <button onClick={() => setCurrentPage('reflection')} style={navButtonStyle}>📝 Reflection</button>
-              <button onClick={() => setCurrentPage('ai')} style={navButtonStyle}>🤖 AI Mentor</button>
-              <button onClick={() => setCurrentPage('tree')} style={navButtonStyle}>🌳 Growth Tree</button>
-              <button onClick={() => setCurrentPage('career')} style={navButtonStyle}>🎯 Career</button>
-            </div>
-          )}
         </div>
       </nav>
 
@@ -415,7 +383,7 @@ function App() {
 
 const inputStyle = { width: '100%', padding: '16px', marginBottom: '16px', borderRadius: '12px', border: '2px solid #fed7aa', fontSize: '17px' };
 const buttonStyle = { width: '100%', padding: '18px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '16px', fontSize: '19px', marginTop: '20px', cursor: 'pointer' };
-const navButtonStyle = { padding: '10px 18px', backgroundColor: '#9a3412', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '15px' };
+//const navButtonStyle = { padding: '10px 18px', backgroundColor: '#9a3412', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '15px' };
 const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '20px', textAlign: 'center' as const, boxShadow: '0 10px 15px rgba(0,0,0,0.08)' };
 
 export default App;
