@@ -373,25 +373,39 @@ function App() {
         )}
 
         {currentPage === 'tree' && (
-          <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree</h1>
-            <p style={{ marginBottom: '30px' }}>Your tree grows with streak and seeds</p>
+  <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
+    <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree</h1>
+    <p style={{ marginBottom: '30px' }}>Your tree grows with streak and seeds</p>
 
-            <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', position: 'relative' }}>
-              <iframe 
-                src="https://modelviewer.dev/examples/AR/" 
-                style={{ width: '100%', height: '500px', border: 'none', borderRadius: '16px' }}
-                title="Growth Tree AR"
-              />
-            </div>
+    <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', position: 'relative' }}>
+      <div style={{ width: '100%', height: '500px', backgroundColor: '#f0f0f0', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '120px' }}>
+        🌳
+      </div>
+      <button onClick={() => alert('AR mode is coming soon! For now, imagine your tree growing in your room 🌱')} style={{
+        position: 'absolute',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        padding: '12px 24px',
+        backgroundColor: '#ea580c',
+        color: 'white',
+        border: 'none',
+        borderRadius: '12px',
+        fontSize: '18px',
+        cursor: 'pointer',
+        zIndex: 10
+      }}>
+        View in AR 📱
+      </button>
+    </div>
 
-            <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
-              <h3>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
-              <p>Streak: {user.streak} days | Seeds: {user.seeds}</p>
-              <p>The tree grows stronger with every reflection and AI session!</p>
-            </div>
-          </div>
-        )}
+    <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
+      <h3>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
+      <p>Streak: {user.streak} days | Seeds: {user.seeds}</p>
+      <p>The tree grows stronger with every reflection and AI session!</p>
+    </div>
+  </div>
+)}
 
         {currentPage === 'career' && <div style={{ textAlign: 'center', padding: '120px' }}>🎯 Career Roadmap - Coming Soon</div>}
       </div>
