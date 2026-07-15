@@ -1,13 +1,3 @@
-/// <reference types="vite/client" />
-
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'model-viewer': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
-    }
-  }
-}
-
 import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import { getAIMentorResponse } from './aiService';
@@ -212,44 +202,44 @@ function App() {
   };
 
   const getAIAdvice = async () => {
-  if (messageLimit >= 10) {
-    alert("You have reached the daily limit of 10 messages. Come back tomorrow! 🌱");
-    return;
-  }
+    if (messageLimit >= 10) {
+      alert("You have reached the daily limit of 10 messages. Come back tomorrow! 🌱");
+      return;
+    }
 
-  setIsLoading(true);
+    setIsLoading(true);
 
-  const result = await getAIMentorResponse(user, userMessage || "");
+    const result = await getAIMentorResponse(user, userMessage || "");
 
-  const newHistory = [
-    ...chatHistory,
-    { role: "user", content: userMessage },
-    { role: "assistant", content: result.response }
-  ];
+    const newHistory = [
+      ...chatHistory,
+      { role: "user", content: userMessage },
+      { role: "assistant", content: result.response }
+    ];
 
-  setChatHistory(newHistory);
-  setMessageLimit(prev => prev + 1);
-  setUserMessage("");
+    setChatHistory(newHistory);
+    setMessageLimit(prev => prev + 1);
+    setUserMessage("");
 
-  if (result.insight) {
-    await supabase.from('hidden_patterns').insert([{
-      user_id: user.id,
-      pattern: result.insight,
-      importance: 8
-    }]);
+    if (result.insight) {
+      await supabase.from('hidden_patterns').insert([{
+        user_id: user.id,
+        pattern: result.insight,
+        importance: 8
+      }]);
 
-    const { data: patterns } = await supabase
-      .from('hidden_patterns')
-      .select('pattern')
-      .eq('user_id', user.id)
-      .order('discovered_date', { ascending: false })
-      .limit(10);
+      const { data: patterns } = await supabase
+        .from('hidden_patterns')
+        .select('pattern')
+        .eq('user_id', user.id)
+        .order('discovered_date', { ascending: false })
+        .limit(10);
 
-    setHiddenDiscoveries(patterns ? patterns.map(p => p.pattern) : ["You started your growth journey 🌱"]);
-  }
+      setHiddenDiscoveries(patterns ? patterns.map(p => p.pattern) : ["You started your growth journey 🌱"]);
+    }
 
-  setIsLoading(false);
-};
+    setIsLoading(false);
+  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f1e9', fontFamily: 'system-ui, sans-serif', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
@@ -383,41 +373,25 @@ function App() {
         )}
 
         {currentPage === 'tree' && (
-  <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-    <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree</h1>
-    <p style={{ marginBottom: '30px' }}>Your tree grows with streak and seeds</p>
+          <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree</h1>
+            <p style={{ marginBottom: '30px' }}>Your tree grows with streak and seeds</p>
 
-    <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', position: 'relative' }}>
-      <iframe 
-        src="https://modelviewer.dev/examples/AR/" 
-        style={{ width: '100%', height: '500px', border: 'none', borderRadius: '16px' }}
-        title="Growth Tree AR"
-      />
-      <button onClick={() => alert('Open in AR mode on mobile - tap the screen!')} style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        padding: '12px 24px',
-        backgroundColor: '#ea580c',
-        color: 'white',
-        border: 'none',
-        borderRadius: '12px',
-        fontSize: '18px',
-        cursor: 'pointer',
-        zIndex: 10
-      }}>
-        View in AR 📱
-      </button>
-    </div>
+            <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', position: 'relative' }}>
+              <iframe 
+                src="https://modelviewer.dev/examples/AR/" 
+                style={{ width: '100%', height: '500px', border: 'none', borderRadius: '16px' }}
+                title="Growth Tree AR"
+              />
+            </div>
 
-    <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
-      <h3>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
-      <p>Streak: {user.streak} days | Seeds: {user.seeds}</p>
-      <p>The tree grows stronger with every reflection and AI session!</p>
-    </div>
-  </div>
-)}
+            <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
+              <h3>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
+              <p>Streak: {user.streak} days | Seeds: {user.seeds}</p>
+              <p>The tree grows stronger with every reflection and AI session!</p>
+            </div>
+          </div>
+        )}
 
         {currentPage === 'career' && <div style={{ textAlign: 'center', padding: '120px' }}>🎯 Career Roadmap - Coming Soon</div>}
       </div>
