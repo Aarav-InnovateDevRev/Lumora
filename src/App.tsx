@@ -366,48 +366,50 @@ function App() {
           )}
 
           {currentPage === 'tree' && (
-  <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-    <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree</h1>
-    <p style={{ marginBottom: '30px' }}>Watch your tree grow in AR as you build streaks and seeds!</p>
+            <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
+              <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree</h1>
+              <p style={{ marginBottom: '30px' }}>Watch your tree grow in AR as you build streaks and seeds!</p>
 
-    <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', position: 'relative' }}>
-      {/* @ts-ignore - model-viewer is a custom web component */}
-      <model-viewer 
-        src="https://modelviewer.dev/assets/ShopifyModels/Tree.glb"
-        ar 
-        ar-modes="webxr scene-viewer quick-look"
-        camera-controls 
-        auto-rotate 
-        shadow-intensity="1"
-        style={{ width: '100%', height: '500px', backgroundColor: '#f0f0f0', borderRadius: '16px' }}
-      >
-        <button slot="ar-button" style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          padding: '14px 28px',
-          backgroundColor: '#ea580c',
-          color: 'white',
-          border: 'none',
-          borderRadius: '12px',
-          fontSize: '18px',
-          cursor: 'pointer',
-          zIndex: 10
-        }}>
-          View in AR 📱
-        </button>
-      {/* @ts-ignore - model-viewer is a custom web component */}
-      </model-viewer>
-    </div>
+              <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', position: 'relative' }}>
+                {/* @ts-ignore - model-viewer is a custom web component */}
+                <model-viewer 
+                  src="https://modelviewer.dev/assets/ShopifyModels/Tree.glb"
+                  ar 
+                  ar-modes="webxr scene-viewer quick-look"
+                  camera-controls 
+                  auto-rotate 
+                  shadow-intensity="1"
+                  style={{ width: '100%', height: '500px', backgroundColor: '#f0f0f0', borderRadius: '16px' }}
+                >
+                  <button slot="ar-button" style={{
+                    position: 'absolute',
+                    bottom: '30px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    padding: '16px 32px',
+                    backgroundColor: '#ea580c',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                  }}>
+                    View in AR 📱
+                  </button>
+                  {/* @ts-ignore - model-viewer is a custom web component */}
+                </model-viewer>
+              </div>
 
-    <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
-      <h3>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
-      <p>Streak: {user.streak} days | Seeds: {user.seeds}</p>
-      <p>The more you reflect and talk to AI, the stronger your tree grows!</p>
-    </div>
-  </div>
-)}
+              <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
+                <h3>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
+                <p>Streak: {user.streak} days | Seeds: {user.seeds}</p>
+                <p>The more you reflect and talk to AI, the stronger your tree grows!</p>
+              </div>
+            </div>
+          )}
 
           {currentPage === 'career' && <div style={{ textAlign: 'center', padding: '120px' }}>🎯 Career Roadmap - Coming Soon</div>}
         </div>
