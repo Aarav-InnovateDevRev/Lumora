@@ -219,7 +219,20 @@ function App() {
     setIsLoading(false);
   };
 
-    return (
+  const startCamera = () => {
+    const video = document.getElementById('cameraFeed') as HTMLVideoElement;
+    if (video) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(stream => {
+          video.srcObject = stream;
+        })
+        .catch(err => {
+          alert("Please allow camera permission to use AR filter.");
+        });
+    }
+  };
+
+  return (
     <>
       <style>{`
         @media (max-width: 768px) {
@@ -370,72 +383,32 @@ function App() {
           )}
 
           {currentPage === 'tree' && (
-  <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-    <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree - AR Mode</h1>
-    <p style={{ marginBottom: '20px' }}>Point your camera at any flat surface</p>
+            <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
+              <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree - AR Filter</h1>
+              <p style={{ marginBottom: '20px' }}>Your tree overlaid on camera feed</p>
 
-    <div style={{ 
-      backgroundColor: '#0a0a0a', 
-      padding: '40px', 
-      borderRadius: '24px', 
-      position: 'relative', 
-      height: '520px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-      boxShadow: '0 10px 40px rgba(0,0,0,0.6)'
-    }}>
-      <div style={{ 
-        fontSize: `${140 + Math.min(user.streak * 8, 120)}px`, 
-        animation: 'grow 4s infinite alternate', 
-        filter: 'drop-shadow(0 0 40px #4ade80)',
-        transition: 'font-size 0.6s ease'
-      }}>
-        🌳
-      </div>
-      
-      <div style={{
-        position: 'absolute',
-        bottom: '40px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        backgroundColor: 'rgba(0,0,0,0.75)',
-        color: '#fff',
-        padding: '12px 28px',
-        borderRadius: '9999px',
-        fontSize: '16px',
-        fontWeight: 'bold'
-      }}>
-        AR Filter Active • Level {Math.floor(user.streak / 3) + 1}
-      </div>
-    </div>
+              <div style={{ position: 'relative', width: '100%', maxWidth: '600px', margin: '0 auto', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.6)' }}>
+                <video id="cameraFeed" autoPlay playsInline style={{ width: '100%', height: '520px', objectFit: 'cover' }} />
+                
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '180px', animation: 'grow 3s infinite alternate', filter: 'drop-shadow(0 0 50px #4ade80)', pointerEvents: 'none', zIndex: 10 }}>
+                  🌳
+                </div>
 
-    <button 
-      onClick={() => alert("📱 AR Camera Opened!\n\nYour personal growth tree is now visible in your room!\n\nTree Size: Level " + (Math.floor(user.streak / 3) + 1) + "\n\n(Real 3D AR in full version)")}
-      style={{
-        marginTop: '30px',
-        padding: '18px 50px',
-        backgroundColor: '#ea580c',
-        color: 'white',
-        border: 'none',
-        borderRadius: '9999px',
-        fontSize: '20px',
-        fontWeight: 'bold',
-        cursor: 'pointer',
-        boxShadow: '0 8px 25px rgba(234,88,12,0.5)'
-      }}
-    >
-      Open AR Camera
-    </button>
+                <div style={{ position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'rgba(0,0,0,0.7)', color: 'white', padding: '12px 28px', borderRadius: '9999px', fontSize: '16px', zIndex: 20 }}>
+                  AR Filter Active • Level {Math.floor(user.streak / 3) + 1}
+                </div>
+              </div>
 
-    <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
-      <h3>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
-      <p>Streak: {user.streak} days | Seeds: {user.seeds}</p>
-      <p>The more you reflect, the bigger your AR tree grows in real world!</p>
-    </div>
-  </div>
-)}
+              <button onClick={startCamera} style={{ marginTop: '30px', padding: '18px 50px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '9999px', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 8px 25px rgba(234,88,12,0.5)' }}>
+                Start AR Camera
+              </button>
+
+              <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
+                <h3>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
+                <p>Streak: {user.streak} days | Seeds: {user.seeds}</p>
+              </div>
+            </div>
+          )}
 
           {currentPage === 'career' && <div style={{ textAlign: 'center', padding: '120px' }}>🎯 Career Roadmap - Coming Soon</div>}
         </div>
