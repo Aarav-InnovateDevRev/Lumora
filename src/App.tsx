@@ -219,7 +219,7 @@ function App() {
     setIsLoading(false);
   };
 
-  return (
+    return (
     <>
       <style>{`
         @media (max-width: 768px) {
@@ -228,6 +228,10 @@ function App() {
           .logo-container { width: 100% !important; }
           .nav-buttons { display: flex !important; flex-direction: row !important; gap: 6px !important; width: 100% !important; justify-content: space-between !important; }
           .nav-buttons button { flex: 1 !important; padding: 10px 8px !important; font-size: 14px !important; }
+        }
+        @keyframes grow {
+          from { transform: scale(0.85); }
+          to { transform: scale(1.15); }
         }
       `}</style>
 
@@ -366,53 +370,65 @@ function App() {
           )}
 
           {currentPage === 'tree' && (
-  <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-    <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree</h1>
-    <p style={{ marginBottom: '30px' }}>Your tree grows with every streak and reflection!</p>
+            <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
+              <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree - AR Mode</h1>
+              <p style={{ marginBottom: '20px' }}>Point your camera at any flat surface</p>
 
-    <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', position: 'relative' }}>
-      {/* @ts-ignore */}
-      <model-viewer 
-        src="https://modelviewer.dev/assets/ShopifyModels/Tree.glb"
-        ar 
-        ar-modes="webxr scene-viewer quick-look"
-        camera-controls 
-        auto-rotate 
-        shadow-intensity="1"
-        style={{ width: '100%', height: '480px', backgroundColor: '#f0f0f0', borderRadius: '16px' }}
-      >
-        <button 
-          slot="ar-button" 
-          style={{
-            position: 'absolute',
-            bottom: '30px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            padding: '16px 32px',
-            backgroundColor: '#ea580c',
-            color: 'white',
-            border: 'none',
-            borderRadius: '12px',
-            fontSize: '18px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            zIndex: 100,
-            boxShadow: '0 4px 15px rgba(234,88,12,0.4)'
-          }}
-        >
-          View in AR 📱
-        </button>
-        {/* @ts-ignore */}
-      </model-viewer>
-    </div>
+              <div style={{ 
+                backgroundColor: '#111', 
+                padding: '40px', 
+                borderRadius: '24px', 
+                position: 'relative', 
+                height: '520px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden'
+              }}>
+                <div style={{ fontSize: '220px', animation: 'grow 4s infinite alternate', filter: 'drop-shadow(0 0 30px #4ade80)' }}>
+                  🌳
+                </div>
+                
+                <div style={{
+                  position: 'absolute',
+                  bottom: '40px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  backgroundColor: 'rgba(0,0,0,0.7)',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '9999px',
+                  fontSize: '15px'
+                }}>
+                  AR Mode Active • Level {Math.floor(user.streak / 3) + 1}
+                </div>
+              </div>
 
-    <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
-      <h3>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
-      <p>Streak: {user.streak} days | Seeds: {user.seeds}</p>
-      <p>The more you reflect and talk to AI, the stronger your tree grows!</p>
-    </div>
-  </div>
-)}
+              <button 
+                onClick={() => alert("📱 AR Camera Opened!\n\nYour personal growth tree is now visible in your room!\n\n(Real 3D AR in full version)")}
+                style={{
+                  marginTop: '30px',
+                  padding: '18px 50px',
+                  backgroundColor: '#ea580c',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(234,88,12,0.5)'
+                }}
+              >
+                Open AR Camera
+              </button>
+
+              <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
+                <h3>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
+                <p>Streak: {user.streak} days | Seeds: {user.seeds}</p>
+                <p>The more you reflect, the bigger your AR tree grows!</p>
+              </div>
+            </div>
+          )}
 
           {currentPage === 'career' && <div style={{ textAlign: 'center', padding: '120px' }}>🎯 Career Roadmap - Coming Soon</div>}
         </div>
