@@ -219,14 +219,14 @@ function App() {
     setIsLoading(false);
   };
 
-  const startCamera = () => {
+    const startCamera = () => {
     const video = document.getElementById('cameraFeed') as HTMLVideoElement;
     if (video) {
       navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
         .then(stream => {
           video.srcObject = stream;
         })
-        .catch(err => {
+        .catch(() => {
           alert("Please allow camera permission to use AR filter.");
         });
     }
