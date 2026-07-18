@@ -407,7 +407,7 @@ function App() {
           {currentPage === 'tree' && (
             <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
               <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree - AR Filter</h1>
-              <p style={{ marginBottom: '20px' }}>Your tree overlaid on camera feed (Selfie Style)</p>
+              <p style={{ marginBottom: '20px' }}>Your tree overlaid on camera (Invisible to Visible - Selfie)</p>
 
               <div style={{ position: 'relative', width: '100%', maxWidth: '600px', margin: '0 auto', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.6)' }}>
                 <video id="cameraFeed" autoPlay playsInline style={{ width: '100%', height: '520px', objectFit: 'cover' }} />
