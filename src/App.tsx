@@ -3,28 +3,36 @@ import { supabase } from './supabaseClient';
 import { getAIMentorResponse } from './aiService';
 
 function App() {
+  // Page Navigation State
   const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career'>('login');
   
+  // Login State
   const [loginId, setLoginId] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
+  // User Profile State
   const [user, setUser] = useState({
     id: "", name: "", class: "", goal: "", preferredTone: "Friendly",
     studentType: "Mixed", studyFeeling: "Focused", password: "",
     streak: 0, seeds: 0,
   });
 
+  // Daily Reflection Form
   const [reflection, setReflection] = useState({
     studyHours: "", subjects: "", mood: "Good", confidence: "Medium", wins: "", struggles: "",
   });
 
+  // Hidden Discoveries from AI
   const [hiddenDiscoveries, setHiddenDiscoveries] = useState<string[]>(["You started your growth journey 🌱"]);
+
+  // AI Chat State
   const [userMessage, setUserMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<{role: string, content: string}[]>([]);
   const [messageLimit, setMessageLimit] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Load saved user from localStorage on start
   useEffect(() => {
     const saved = localStorage.getItem('lumoraUser');
     if (saved) {
@@ -33,6 +41,7 @@ function App() {
     }
   }, []);
 
+  // ==================== LOGIN WITH SUPABASE ====================
   const handleLogin = async () => {
     setLoginError("");
     const { data, error } = await supabase
@@ -91,6 +100,7 @@ function App() {
     setCurrentPage('dashboard');
   };
 
+  // ==================== ONBOARDING WITH SUPABASE ====================
   const finishOnboarding = async () => {
     if (!user.id || !user.name || !user.class || !user.goal) {
       alert("❌ Please fill all fields!");
@@ -130,6 +140,7 @@ function App() {
     setCurrentPage('dashboard');
   };
 
+  // ==================== SAVE REFLECTION + STREAK + SEEDS ====================
   const saveReflection = async () => {
     const today = new Date().toISOString().split('T')[0];
     if (localStorage.getItem('lastReflectionDate') === today) {
@@ -179,6 +190,7 @@ function App() {
     setCurrentPage('dashboard');
   };
 
+  // ==================== AI MENTOR WITH PERSONALIZATION ====================
   const getAIAdvice = async () => {
     if (messageLimit >= 10) {
       alert("You have reached the daily limit of 10 messages. Come back tomorrow! 🌱");
@@ -219,10 +231,13 @@ function App() {
     setIsLoading(false);
   };
 
-    const startCamera = () => {
+  // ==================== AR CAMERA FILTER (Front Camera - Selfie Style) ====================
+  const startCamera = () => {
     const video = document.getElementById('cameraFeed') as HTMLVideoElement;
     if (video) {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user' }   // Front camera for selfie-style AR
+      })
         .then(stream => {
           video.srcObject = stream;
         })
@@ -249,6 +264,7 @@ function App() {
       `}</style>
 
       <div style={{ minHeight: '100vh', backgroundColor: '#f8f1e9', fontFamily: 'system-ui, sans-serif', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+        {/* Navigation Bar */}
         <nav style={{ backgroundColor: 'white', padding: '16px 24px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 100 }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="logo-container" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -268,6 +284,7 @@ function App() {
         </nav>
 
         <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
+          {/* Login Page */}
           {currentPage === 'login' && (
             <div style={{ maxWidth: '420px', margin: '80px auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
               <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Welcome to Lumora</h1>
@@ -279,6 +296,7 @@ function App() {
             </div>
           )}
 
+          {/* Onboarding Page */}
           {currentPage === 'onboarding' && (
             <div style={{ maxWidth: '620px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
               <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Create Your Profile</h1>
@@ -301,6 +319,7 @@ function App() {
             </div>
           )}
 
+          {/* Dashboard */}
           {currentPage === 'dashboard' && (
             <div>
               <h1 style={{ textAlign: 'center', fontSize: '42px', color: '#9a3412' }}>Welcome back, {user.name}!</h1>
@@ -320,6 +339,7 @@ function App() {
             </div>
           )}
 
+          {/* Daily Reflection */}
           {currentPage === 'reflection' && (
             <div style={{ maxWidth: '700px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px' }}>
               <h2>Daily Reflection</h2>
@@ -349,6 +369,7 @@ function App() {
             </div>
           )}
 
+          {/* AI Growth Mentor */}
           {currentPage === 'ai' && (
             <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: 'white', padding: '40px', borderRadius: '24px' }}>
               <h2>🤖 Your AI Growth Mentor</h2>
@@ -382,10 +403,11 @@ function App() {
             </div>
           )}
 
+          {/* AR Growth Tree with Front Camera Filter */}
           {currentPage === 'tree' && (
             <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
               <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree - AR Filter</h1>
-              <p style={{ marginBottom: '20px' }}>Your tree overlaid on camera feed</p>
+              <p style={{ marginBottom: '20px' }}>Your tree overlaid on camera feed (Selfie Style)</p>
 
               <div style={{ position: 'relative', width: '100%', maxWidth: '600px', margin: '0 auto', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.6)' }}>
                 <video id="cameraFeed" autoPlay playsInline style={{ width: '100%', height: '520px', objectFit: 'cover' }} />
@@ -400,7 +422,7 @@ function App() {
               </div>
 
               <button onClick={startCamera} style={{ marginTop: '30px', padding: '18px 50px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '9999px', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 8px 25px rgba(234,88,12,0.5)' }}>
-                Start AR Camera
+                Start AR Camera (Selfie)
               </button>
 
               <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
