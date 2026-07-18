@@ -1,32 +1,101 @@
-# React + TypeScript + Vite
+# Lumora - AI-Powered Personal Growth Agent for Students
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**"Your Personal AI Growth Companion"**
 
-Currently, two official plugins are available:
+**Live Demo:** [https://lumora-tan-eight.vercel.app](https://lumora-tan-eight.vercel.app)  
+**GitHub:** [Aarav-InnovateDevRev/Lumora](https://github.com/Aarav-InnovateDevRev/Lumora)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## The Problem
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Students today struggle with **lack of consistent motivation**, **no personalized guidance**, and **no long-term growth tracking**. Generic apps and chatbots fail because they don't remember the student as a person — they only remember conversations.
 
-## Expanding the Oxlint configuration
+## The Solution
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+**Lumora** is an **AI Growth Agent** that treats every student as a unique individual. It builds a deep, evolving profile through daily reflections, streak tracking, and hidden pattern discovery — then uses that knowledge to deliver truly personalized guidance.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+> "Build AI agents capable of accelerating innovation by generating insights, uncovering patterns, identifying opportunities... that would otherwise require significant human effort and expertise."
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Lumora does exactly that in the **EdTech domain**.
+
+---
+
+## Key Features
+
+### 1. Personalized Onboarding & Profile
+- Unique User ID + Password
+- Deep profile (study feelings, goals, learning style)
+
+### 2. Daily Reflection System + Gamification
+- Mood, confidence, wins, struggles, hours studied
+- **Streak & Seeds** reward system (1 streak per day)
+- Data stored in Supabase for long-term pattern analysis
+
+### 3. AI Growth Mentor (Personalized Agent)
+- Uses Groq (Llama 3.1) + user's real data from Supabase
+- Remembers reflections, streaks, goals
+- Gives actionable, personalized advice
+- Daily message limit (10) for healthy usage
+
+> "Lumora's work though can be done with human efforts but can help make a breakthrough in EdTech"
+
+### 4. Hidden Discoveries & Pattern Engine
+- AI automatically finds insights from reflections
+- "Chatbots remember conversations. **Lumora remembers people.**"
+- Discoveries stored in database and shown on dashboard
+
+### 5. AR Growth Tree (Camera Filter)
+- Real front camera AR filter with animated tree
+- Tree size scales with streak & level
+- Visual representation of growth in the real world
+
+---
+
+## Tech Stack
+
+- **Frontend:** React + Vite + TypeScript
+- **Backend/Database:** Supabase (Auth, PostgreSQL, RLS)
+- **AI:** Groq (Llama 3.1) with personalized context
+- **AR:** WebRTC Camera + CSS Overlay
+- **Deployment:** Vercel
+
+---
+
+## Why Lumora Fits the Prompt Perfectly
+
+- **Industry:** Education / Student Development
+- **AI Agent:** Specialized growth agent that reasons using real user data
+- **Breakthrough:** Moves from generic chatbots to **deep personal memory + pattern discovery**
+- **Autonomous Workflows:** Daily reflection → streak → AI insight → AR visualization
+- **Discovery & Innovation:** Hidden patterns that would normally require a human mentor
+
+---
+
+## Compromises & Future Roadmap
+
+**For MVP we compromised on:**
+- Full 3D AR model-viewer (used camera overlay instead)
+- Advanced analytics dashboard
+- Leaderboard & social features
+
+**Future Plans:**
+- Premium version with unlimited AI messages
+- Leaderboard + school competitions
+- Seeds marketplace (redeem for real rewards)
+- Full WebXR 3D AR tree
+- Parent/Teacher dashboard
+
+---
+
+## How to Run Locally
+
+```bash
+git clone https://github.com/Aarav-InnovateDevRev/Lumora.git
+cd Lumora/frontend
+npm install
+npm run dev
+
+
+Made with ❤️ by Aarav, Akshat, Aditya, Jingle, Shashi
+For ShriTeq 2026 Hackathon
