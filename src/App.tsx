@@ -268,9 +268,13 @@ function App() {
         <nav style={{ backgroundColor: 'white', padding: '16px 24px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 100 }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="logo-container" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '36px' }}>🌱</span>
-              <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#9a3412' }}>Lumora</h1>
-            </div>
+  <img 
+    src="/logo.png" 
+    alt="Lumora Logo" 
+    style={{ height: '48px', width: 'auto' }} 
+  />
+  <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#9a3412' }}>Lumora</h1>
+</div>
             
             {currentPage !== 'login' && currentPage !== 'onboarding' && (
               <div className="nav-buttons" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
