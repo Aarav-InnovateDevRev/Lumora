@@ -124,6 +124,10 @@ Lumora builds a continuously evolving understanding of every student through:
 
 Instead of answering one question well, Lumora continuously improves its understanding of the student and delivers increasingly personalised guidance.
 
+## Note 
+
+Throughout this README, certain phrases enclosed in quotation marks (>...) are **direct excerpts from the official ShriTeq Hackathon problem statement**. These quotations have been intentionally referenced to demonstrate how Lumora's design, architecture, and AI capabilities directly align with the challenge objectives. All remaining descriptions, interpretations, implementation details, and product vision are original work developed by Team Lumora.
+
 ## How to Run Locally
 
 ```bash
@@ -131,11 +135,6 @@ git clone https://github.com/Aarav-InnovateDevRev/Lumora.git
 cd Lumora/frontend
 npm install
 npm run dev
-
-## Note 
-
-Throughout this README, certain phrases enclosed in quotation marks (>...) are **direct excerpts from the official ShriTeq Hackathon problem statement**. These quotations have been intentionally referenced to demonstrate how Lumora's design, architecture, and AI capabilities directly align with the challenge objectives. All remaining descriptions, interpretations, implementation details, and product vision are original work developed by Team Lumora.
-
 
 
 Made with ❤️ by Aarav, Akshat, Aditya, Jingle, Shashi
