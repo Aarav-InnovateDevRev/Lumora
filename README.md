@@ -132,6 +132,11 @@ cd Lumora/frontend
 npm install
 npm run dev
 
+## Note 
+
+Throughout this README, certain phrases enclosed in quotation marks (>...) are **direct excerpts from the official ShriTeq Hackathon problem statement**. These quotations have been intentionally referenced to demonstrate how Lumora's design, architecture, and AI capabilities directly align with the challenge objectives. All remaining descriptions, interpretations, implementation details, and product vision are original work developed by Team Lumora.
+
+
 
 Made with ❤️ by Aarav, Akshat, Aditya, Jingle, Shashi
 For ShriTeq 2026 Hackathon
