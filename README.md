@@ -44,7 +44,7 @@ Lumora does exactly that in the **EdTech domain**.
 - Daily message limit (10) for healthy usage
 - Unlike traditional AI assistants that mainly rely on the current conversation, Lumora combines long-term reflection history, streaks, goals and Hidden Discoveries to provide responses based on the student's complete growth journey. This allows the AI to give advice that becomes more personalised and accurate over time.
 
-> "Lumora's work though can be done with human efforts but can help make a breakthrough in EdTech"
+> "Focus on how AI can augment human capability rather than simply responding to prompts."
 
 ### 4. Hidden Discoveries & Pattern Engine
 - AI automatically finds insights from reflections
@@ -61,6 +61,9 @@ These discoveries transform raw data into meaningful guidance instead of simply 
 - The Growth Tree is more than a visual feature. It transforms invisible personal progress into something students can actually see. Every streak, reflection and achievement contributes to the tree's growth, making consistency rewarding and reinforcing positive habits through visual feedback.
 
 ---
+
+> "Successful projects will demonstrate how an AI agent can reason, plan, take actions, coordinate workflows, generate outcomes, or create measurable impact within a specific domain"
+> "Lumora's work though can be done with human efforts but can help make a breakthrough in EdTech"
 
 ## Tech Stack
 
@@ -126,7 +129,7 @@ Instead of answering one question well, Lumora continuously improves its underst
 
 ## Note 
 
-Throughout this README, certain phrases enclosed in quotation marks (>...) are **direct excerpts from the official ShriTeq Hackathon problem statement**. These quotations have been intentionally referenced to demonstrate how Lumora's design, architecture, and AI capabilities directly align with the challenge objectives. All remaining descriptions, interpretations, implementation details, and product vision are original work developed by Team Lumora.
+Throughout this README, certain phrases are written highlighted starting with (>...) enclosed in inverted commas ("...") are **direct excerpts from the official ShriTeq Hackathon problem statement**. These quotations have been intentionally referenced to demonstrate how Lumora's design, architecture, and AI capabilities directly align with the challenge objectives. All remaining descriptions, interpretations, implementation details, and product vision are original work developed by Team Lumora.
 
 ## How to Run Locally
 
