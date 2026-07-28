@@ -63,6 +63,7 @@ These discoveries transform raw data into meaningful guidance instead of simply 
 ---
 
 > "Successful projects will demonstrate how an AI agent can reason, plan, take actions, coordinate workflows, generate outcomes, or create measurable impact within a specific domain"
+
 > "Lumora's work though can be done with human efforts but can help make a breakthrough in EdTech"
 
 ## Tech Stack
