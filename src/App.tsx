@@ -434,7 +434,7 @@ function App() {
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundImage: 'url(/forest-bg.jpg)',
+  backgroundImage: 'url(/forest-bg.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
