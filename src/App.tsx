@@ -32,6 +32,9 @@ function App() {
   const [messageLimit, setMessageLimit] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Mobile sidebar state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Load saved user from localStorage on start
   useEffect(() => {
     const saved = localStorage.getItem('lumoraUser');
@@ -231,12 +234,12 @@ function App() {
     setIsLoading(false);
   };
 
-  // ==================== AR CAMERA FILTER (Front Camera - Selfie Style) ====================
+  // ==================== AR CAMERA FILTER ====================
   const startCamera = () => {
     const video = document.getElementById('cameraFeed') as HTMLVideoElement;
     if (video) {
       navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user' }   // Front camera for selfie-style AR
+        video: { facingMode: 'user' }
       })
         .then(stream => {
           video.srcObject = stream;
@@ -247,205 +250,467 @@ function App() {
     }
   };
 
+  // Helper to change page and close mobile menu
+  const goToPage = (page: typeof currentPage) => {
+    setCurrentPage(page);
+    setIsMobileMenuOpen(false);
+  };
+
+  // ==================== SIDEBAR NAVIGATION ITEMS ====================
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
+    { id: 'reflection', label: 'Reflection', icon: '📝' },
+    { id: 'ai', label: 'AI Mentor', icon: '🤖' },
+    { id: 'tree', label: 'Growth Tree', icon: '🌳' },
+    { id: 'career', label: 'Career Roadmap', icon: '🎯' },
+  ] as const;
+
+  // ==================== RENDER ====================
   return (
     <>
       <style>{`
-        @media (max-width: 768px) {
-          nav { padding: 12px 16px !important; }
-          nav > div { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
-          .logo-container { width: 100% !important; }
-          .nav-buttons { display: flex !important; flex-direction: row !important; gap: 6px !important; width: 100% !important; justify-content: space-between !important; }
-          .nav-buttons button { flex: 1 !important; padding: 10px 8px !important; font-size: 14px !important; }
-        }
         @keyframes grow {
           from { transform: scale(0.85); }
           to { transform: scale(1.15); }
         }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+          width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+          background: #f8f1e9;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #d6a67a;
+          border-radius: 10px;
+        }
       `}</style>
 
-      <div style={{ minHeight: '100vh', backgroundColor: '#f8f1e9', fontFamily: 'system-ui, sans-serif', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
-        {/* Navigation Bar */}
-        <nav style={{ backgroundColor: 'white', padding: '16px 24px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 100 }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div className="logo-container" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <img 
-               src="/logo.png" 
-               alt="Lumora Logo" 
-               style={{ height: '48px', width: 'auto' }} 
-              />
-            <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#9a3412' }}>Lumora</h1>
-            </div>
-            
-            {currentPage !== 'login' && currentPage !== 'onboarding' && (
-              <div className="nav-buttons" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button onClick={() => setCurrentPage('dashboard')} style={navButtonStyle}>🏠</button>
-                <button onClick={() => setCurrentPage('reflection')} style={navButtonStyle}>📝</button>
-                <button onClick={() => setCurrentPage('ai')} style={navButtonStyle}>🤖</button>
-                <button onClick={() => setCurrentPage('tree')} style={navButtonStyle}>🌳</button>
+      <div className="min-h-screen bg-[#f8f1e9] font-sans text-gray-800">
+        
+        {/* ========== LOGIN & ONBOARDING (Full screen, no sidebar) ========== */}
+        {(currentPage === 'login' || currentPage === 'onboarding') ? (
+          <div className="min-h-screen flex items-center justify-center p-4">
+            {currentPage === 'login' && (
+              <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 md:p-12">
+                <div className="flex flex-col items-center mb-8">
+                  <img src="/logo.png" alt="Lumora Logo" className="h-16 mb-3" />
+                  <h1 className="text-3xl md:text-4xl font-bold text-[#9a3412]">Welcome to Lumora</h1>
+                  <p className="text-gray-500 mt-2 text-center">Your AI Growth Companion</p>
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="User ID"
+                  className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none text-lg"
+                  value={loginId}
+                  onChange={e => setLoginId(e.target.value)}
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none text-lg"
+                  value={loginPassword}
+                  onChange={e => setLoginPassword(e.target.value)}
+                />
+                
+                {loginError && <p className="text-red-500 text-center mb-4">{loginError}</p>}
+                
+                <button
+                  onClick={handleLogin}
+                  className="w-full py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white rounded-2xl text-lg font-semibold transition-colors"
+                >
+                  Login
+                </button>
+                
+                <p className="text-center mt-6 text-gray-600">
+                  New here?{' '}
+                  <button
+                    onClick={() => setCurrentPage('onboarding')}
+                    className="text-[#ea580c] font-medium hover:underline"
+                  >
+                    Create Account
+                  </button>
+                </p>
+              </div>
+            )}
+
+            {currentPage === 'onboarding' && (
+              <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl p-8 md:p-12">
+                <div className="flex flex-col items-center mb-8">
+                  <img src="/logo.png" alt="Lumora Logo" className="h-14 mb-3" />
+                  <h1 className="text-3xl font-bold text-[#9a3412]">Create Your Profile</h1>
+                </div>
+
+                <input type="text" placeholder="Unique User ID" className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none" value={user.id} onChange={e => setUser(p => ({...p, id: e.target.value}))} />
+                <input type="text" placeholder="Full Name" className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none" value={user.name} onChange={e => setUser(p => ({...p, name: e.target.value}))} />
+                <input type="text" placeholder="Class" className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none" value={user.class} onChange={e => setUser(p => ({...p, class: e.target.value}))} />
+                <input type="text" placeholder="Your Big Goal" className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none" value={user.goal} onChange={e => setUser(p => ({...p, goal: e.target.value}))} />
+                <input type="password" placeholder="Set Password" className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none" value={user.password} onChange={e => setUser(p => ({...p, password: e.target.value}))} />
+
+                <label className="block mb-2 font-medium text-gray-700">What do you usually feel while studying?</label>
+                <select
+                  className="w-full px-4 py-3.5 mb-6 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none"
+                  value={user.studyFeeling}
+                  onChange={e => setUser(p => ({...p, studyFeeling: e.target.value}))}
+                >
+                  <option value="Focused">Focused</option>
+                  <option value="Motivated">Motivated</option>
+                  <option value="Anxious">Anxious</option>
+                  <option value="Bored">Bored</option>
+                  <option value="Tired">Tired</option>
+                </select>
+
+                <button
+                  onClick={finishOnboarding}
+                  className="w-full py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white rounded-2xl text-lg font-semibold transition-colors"
+                >
+                  Create Profile & Start
+                </button>
               </div>
             )}
           </div>
-        </nav>
-
-        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
-          {/* Login Page */}
-          {currentPage === 'login' && (
-            <div style={{ maxWidth: '420px', margin: '80px auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
-              <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Welcome to Lumora</h1>
-              <input type="text" placeholder="User ID" style={inputStyle} value={loginId} onChange={e => setLoginId(e.target.value)} />
-              <input type="password" placeholder="Password" style={inputStyle} value={loginPassword} onChange={e => setLoginPassword(e.target.value)} />
-              {loginError && <p style={{ color: 'red', textAlign: 'center' }}>{loginError}</p>}
-              <button onClick={handleLogin} style={buttonStyle}>Login</button>
-              <p style={{ textAlign: 'center', marginTop: '20px' }}>New here? <button onClick={() => setCurrentPage('onboarding')} style={{color: '#ea580c', border:'none', background:'none'}}>Create Account</button></p>
-            </div>
-          )}
-
-          {/* Onboarding Page */}
-          {currentPage === 'onboarding' && (
-            <div style={{ maxWidth: '620px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
-              <h1 style={{ textAlign: 'center', fontSize: '38px', color: '#9a3412' }}>Create Your Profile</h1>
-              <input type="text" placeholder="Unique User ID" style={inputStyle} value={user.id} onChange={e => setUser(p => ({...p, id: e.target.value}))} />
-              <input type="text" placeholder="Full Name" style={inputStyle} value={user.name} onChange={e => setUser(p => ({...p, name: e.target.value}))} />
-              <input type="text" placeholder="Class" style={inputStyle} value={user.class} onChange={e => setUser(p => ({...p, class: e.target.value}))} />
-              <input type="text" placeholder="Your Big Goal" style={inputStyle} value={user.goal} onChange={e => setUser(p => ({...p, goal: e.target.value}))} />
-              <input type="password" placeholder="Set Password" style={inputStyle} value={user.password} onChange={e => setUser(p => ({...p, password: e.target.value}))} />
-
-              <label style={{display:'block', margin:'15px 0 8px'}}>What do you usually feel while studying?</label>
-              <select style={inputStyle} value={user.studyFeeling} onChange={e => setUser(p => ({...p, studyFeeling: e.target.value}))}>
-                <option value="Focused">Focused</option>
-                <option value="Motivated">Motivated</option>
-                <option value="Anxious">Anxious</option>
-                <option value="Bored">Bored</option>
-                <option value="Tired">Tired</option>
-              </select>
-
-              <button onClick={finishOnboarding} style={buttonStyle}>Create Profile & Start</button>
-            </div>
-          )}
-
-          {/* Dashboard */}
-          {currentPage === 'dashboard' && (
-            <div>
-              <h1 style={{ textAlign: 'center', fontSize: '42px', color: '#9a3412' }}>Welcome back, {user.name}!</h1>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '25px', marginTop: '40px' }}>
-                <div style={cardStyle}><h3>🔥 Streak</h3><p style={{fontSize: '52px', fontWeight: 'bold'}}>{user.streak} days</p></div>
-                <div style={cardStyle}><h3>🌱 Seeds</h3><p style={{fontSize: '52px', fontWeight: 'bold'}}>{user.seeds}</p></div>
+        ) : (
+          /* ========== MAIN APP LAYOUT (Sidebar + Content) ========== */
+          <div className="flex min-h-screen">
+            
+            {/* ===== LEFT SIDEBAR (Desktop) ===== */}
+            <aside className="hidden md:flex flex-col w-64 bg-white border-r border-orange-100 shadow-sm fixed h-full z-30">
+              {/* Logo */}
+              <div className="flex items-center gap-3 px-6 py-6 border-b border-orange-50">
+                <img src="/logo.png" alt="Lumora" className="h-10" />
+                <h1 className="text-2xl font-bold text-[#9a3412]">Lumora</h1>
               </div>
-              <div style={{ marginTop: '50px' }}>
-                <h3>Hidden Discoveries</h3>
-                {hiddenDiscoveries.map((d, i) => (
-                  <div key={i} style={{backgroundColor: 'white', padding: '20px', marginTop: '15px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                    ✨ {d}
-                    <button onClick={() => setHiddenDiscoveries(prev => prev.filter((_, index) => index !== i))} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer', fontSize: '20px' }}>🗑</button>
-                  </div>
+
+              {/* Navigation */}
+              <nav className="flex-1 px-4 py-6 space-y-2">
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => goToPage(item.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all ${
+                      currentPage === item.id
+                        ? 'bg-[#9a3412] text-white shadow-md'
+                        : 'text-gray-700 hover:bg-orange-50'
+                    }`}
+                  >
+                    <span className="text-xl">{item.icon}</span>
+                    <span className="font-medium">{item.label}</span>
+                  </button>
                 ))}
-              </div>
-            </div>
-          )}
+              </nav>
 
-          {/* Daily Reflection */}
-          {currentPage === 'reflection' && (
-            <div style={{ maxWidth: '700px', margin: '0 auto', backgroundColor: 'white', padding: '50px', borderRadius: '24px' }}>
-              <h2>Daily Reflection</h2>
-              <input type="text" placeholder="Hours studied today" style={inputStyle} value={reflection.studyHours} onChange={e => setReflection(p => ({...p, studyHours: e.target.value}))} />
-              <textarea placeholder="Subjects studied (comma separated)" style={{...inputStyle, height: '80px'}} value={reflection.subjects} onChange={e => setReflection(p => ({...p, subjects: e.target.value}))} />
-
-              <label style={{display:'block', margin:'15px 0 8px'}}>Mood Today</label>
-              <select style={inputStyle} value={reflection.mood} onChange={e => setReflection(p => ({...p, mood: e.target.value}))}>
-                <option value="Great">Great</option>
-                <option value="Good">Good</option>
-                <option value="Okay">Okay</option>
-                <option value="Tired">Tired</option>
-                <option value="Struggling">Struggling</option>
-              </select>
-
-              <label style={{display:'block', margin:'15px 0 8px'}}>Confidence Level</label>
-              <select style={inputStyle} value={reflection.confidence} onChange={e => setReflection(p => ({...p, confidence: e.target.value}))}>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-              </select>
-
-              <textarea placeholder="Wins today" style={{...inputStyle, height: '100px'}} value={reflection.wins} onChange={e => setReflection(p => ({...p, wins: e.target.value}))} />
-              <textarea placeholder="Struggles" style={{...inputStyle, height: '100px'}} value={reflection.struggles} onChange={e => setReflection(p => ({...p, struggles: e.target.value}))} />
-
-              <button onClick={saveReflection} style={buttonStyle}>Save Reflection</button>
-            </div>
-          )}
-
-          {/* AI Growth Mentor */}
-          {currentPage === 'ai' && (
-            <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: 'white', padding: '40px', borderRadius: '24px' }}>
-              <h2>🤖 Your AI Growth Mentor</h2>
-              <p>Personalized using your profile and latest reflections (10 messages/day)</p>
-
-              <div style={{ marginBottom: '20px', maxHeight: '400px', overflowY: 'auto' }}>
-                {chatHistory.map((msg, i) => (
-                  <div key={i} style={{
-                    marginBottom: '15px',
-                    padding: '15px',
-                    borderRadius: '12px',
-                    backgroundColor: msg.role === 'user' ? '#f0f0f0' : '#f8f1e9'
-                  }}>
-                    <strong>{msg.role === 'user' ? 'You' : 'AI Mentor'}:</strong> {msg.content}
+              {/* User mini profile at bottom */}
+              <div className="px-4 py-5 border-t border-orange-50">
+                <div className="flex items-center gap-3 px-3 py-2">
+                  <div className="w-10 h-10 rounded-full bg-[#ea580c] flex items-center justify-center text-white font-bold text-lg">
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
-                ))}
-              </div>
-
-              <textarea 
-                placeholder="Ask anything..." 
-                style={{...inputStyle, height: '120px'}} 
-                value={userMessage} 
-                onChange={e => setUserMessage(e.target.value)}
-              />
-
-              <button onClick={getAIAdvice} disabled={isLoading} style={buttonStyle}>
-                {isLoading ? "AI is thinking..." : "Get Personalized Advice"}
-              </button>
-
-              {messageLimit >= 10 && <p style={{color: 'red', marginTop: '10px'}}>Daily limit reached (10 messages). Come back tomorrow!</p>}
-            </div>
-          )}
-
-          {/* AR Growth Tree with Front Camera Filter */}
-          {currentPage === 'tree' && (
-            <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-              <h1 style={{ fontSize: '42px', color: '#9a3412' }}>🌳 Your Growth Tree - AR Filter</h1>
-              <p style={{ marginBottom: '20px' }}>Your tree overlaid on camera (Invisible to Visible - Selfie)</p>
-
-              <div style={{ position: 'relative', width: '100%', maxWidth: '600px', margin: '0 auto', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.6)' }}>
-                <video id="cameraFeed" autoPlay playsInline style={{ width: '100%', height: '520px', objectFit: 'cover' }} />
-                
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '180px', animation: 'grow 3s infinite alternate', filter: 'drop-shadow(0 0 50px #4ade80)', pointerEvents: 'none', zIndex: 10 }}>
-                  🌳
-                </div>
-
-                <div style={{ position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'rgba(0,0,0,0.7)', color: 'white', padding: '12px 28px', borderRadius: '9999px', fontSize: '16px', zIndex: 20 }}>
-                  AR Filter Active • Level {Math.floor(user.streak / 3) + 1}
+                  <div className="overflow-hidden">
+                    <p className="font-semibold text-sm truncate">{user.name || 'Student'}</p>
+                    <p className="text-xs text-gray-500 truncate">Class {user.class}</p>
+                  </div>
                 </div>
               </div>
+            </aside>
 
-              <button onClick={startCamera} style={{ marginTop: '30px', padding: '18px 50px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '9999px', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 8px 25px rgba(234,88,12,0.5)' }}>
-                Start AR Camera (Selfie)
-              </button>
-
-              <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '30px', borderRadius: '20px' }}>
-                <h3>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
-                <p>Streak: {user.streak} days | Seeds: {user.seeds}</p>
+            {/* ===== MOBILE TOP BAR ===== */}
+            <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-orange-100 z-40 px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <img src="/logo.png" alt="Lumora" className="h-8" />
+                <span className="text-xl font-bold text-[#9a3412]">Lumora</span>
               </div>
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 rounded-lg bg-orange-50 text-[#9a3412]"
+              >
+                {isMobileMenuOpen ? '✕' : '☰'}
+              </button>
             </div>
-          )}
 
-          {currentPage === 'career' && <div style={{ textAlign: 'center', padding: '120px' }}>🎯 Career Roadmap - Coming Soon</div>}
-        </div>
+            {/* ===== MOBILE SIDEBAR OVERLAY ===== */}
+            {isMobileMenuOpen && (
+              <div className="md:hidden fixed inset-0 z-50">
+                <div className="absolute inset-0 bg-black/40" onClick={() => setIsMobileMenuOpen(false)}></div>
+                <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl p-5">
+                  <div className="flex items-center gap-3 mb-8">
+                    <img src="/logo.png" alt="Lumora" className="h-10" />
+                    <h1 className="text-2xl font-bold text-[#9a3412]">Lumora</h1>
+                  </div>
+                  <nav className="space-y-2">
+                    {navItems.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => goToPage(item.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left ${
+                          currentPage === item.id
+                            ? 'bg-[#9a3412] text-white'
+                            : 'text-gray-700 hover:bg-orange-50'
+                        }`}
+                      >
+                        <span className="text-xl">{item.icon}</span>
+                        <span className="font-medium">{item.label}</span>
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+              </div>
+            )}
+
+            {/* ===== MAIN CONTENT AREA ===== */}
+            <main className="flex-1 md:ml-64 min-h-screen pt-16 md:pt-0 pb-20 md:pb-8">
+              <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+
+                {/* ========== DASHBOARD ========== */}
+                {currentPage === 'dashboard' && (
+                  <div>
+                    {/* Welcome Banner */}
+                    <div className="bg-gradient-to-r from-[#9a3412] to-[#ea580c] rounded-3xl p-6 md:p-8 text-white mb-8 shadow-lg">
+                      <h1 className="text-2xl md:text-3xl font-bold mb-1">Welcome back, {user.name}!</h1>
+                      <p className="opacity-90">Keep growing. Every day counts. 🌱</p>
+                    </div>
+
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
+                      <div className="bg-white rounded-2xl p-6 shadow-sm border border-orange-50">
+                        <div className="flex items-center gap-2 text-gray-600 mb-3">
+                          <span className="text-2xl">🔥</span>
+                          <span className="font-medium">Streak</span>
+                        </div>
+                        <p className="text-4xl md:text-5xl font-bold text-[#9a3412]">{user.streak} <span className="text-xl font-medium text-gray-500">days</span></p>
+                      </div>
+
+                      <div className="bg-white rounded-2xl p-6 shadow-sm border border-orange-50">
+                        <div className="flex items-center gap-2 text-gray-600 mb-3">
+                          <span className="text-2xl">🌱</span>
+                          <span className="font-medium">Seeds</span>
+                        </div>
+                        <p className="text-4xl md:text-5xl font-bold text-[#9a3412]">{user.seeds}</p>
+                      </div>
+                    </div>
+
+                    {/* Hidden Discoveries */}
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-800 mb-4">Hidden Discoveries</h2>
+                      <div className="space-y-3">
+                        {hiddenDiscoveries.map((d, i) => (
+                          <div
+                            key={i}
+                            className="bg-white rounded-2xl px-5 py-4 shadow-sm border border-orange-50 flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl">✨</span>
+                              <span className="text-gray-700">{d}</span>
+                            </div>
+                            <button
+                              onClick={() => setHiddenDiscoveries(prev => prev.filter((_, index) => index !== i))}
+                              className="text-red-400 hover:text-red-600 text-lg p-1"
+                            >
+                              🗑
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ========== DAILY REFLECTION ========== */}
+                {currentPage === 'reflection' && (
+                  <div className="max-w-2xl mx-auto">
+                    <div className="bg-white rounded-3xl shadow-sm border border-orange-50 p-6 md:p-10">
+                      <h2 className="text-2xl font-bold text-[#9a3412] mb-6">Daily Reflection</h2>
+
+                      <input
+                        type="text"
+                        placeholder="Hours studied today"
+                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none"
+                        value={reflection.studyHours}
+                        onChange={e => setReflection(p => ({...p, studyHours: e.target.value}))}
+                      />
+
+                      <textarea
+                        placeholder="Subjects studied (comma separated)"
+                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none h-24"
+                        value={reflection.subjects}
+                        onChange={e => setReflection(p => ({...p, subjects: e.target.value}))}
+                      />
+
+                      <label className="block mb-2 font-medium text-gray-700">Mood Today</label>
+                      <select
+                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none"
+                        value={reflection.mood}
+                        onChange={e => setReflection(p => ({...p, mood: e.target.value}))}
+                      >
+                        <option value="Great">Great</option>
+                        <option value="Good">Good</option>
+                        <option value="Okay">Okay</option>
+                        <option value="Tired">Tired</option>
+                        <option value="Struggling">Struggling</option>
+                      </select>
+
+                      <label className="block mb-2 font-medium text-gray-700">Confidence Level</label>
+                      <select
+                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none"
+                        value={reflection.confidence}
+                        onChange={e => setReflection(p => ({...p, confidence: e.target.value}))}
+                      >
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                      </select>
+
+                      <textarea
+                        placeholder="Wins today"
+                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none h-28"
+                        value={reflection.wins}
+                        onChange={e => setReflection(p => ({...p, wins: e.target.value}))}
+                      />
+
+                      <textarea
+                        placeholder="Struggles"
+                        className="w-full px-4 py-3.5 mb-6 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none h-28"
+                        value={reflection.struggles}
+                        onChange={e => setReflection(p => ({...p, struggles: e.target.value}))}
+                      />
+
+                      <button
+                        onClick={saveReflection}
+                        className="w-full py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white rounded-2xl text-lg font-semibold transition-colors"
+                      >
+                        Save Reflection
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ========== AI GROWTH MENTOR ========== */}
+                {currentPage === 'ai' && (
+                  <div className="max-w-3xl mx-auto">
+                    <div className="bg-white rounded-3xl shadow-sm border border-orange-50 p-6 md:p-8">
+                      <h2 className="text-2xl font-bold text-[#9a3412] mb-2">🤖 Your AI Growth Mentor</h2>
+                      <p className="text-gray-500 mb-6">Personalized using your profile and latest reflections (10 messages/day)</p>
+
+                      <div className="mb-6 max-h-96 overflow-y-auto space-y-3 pr-2">
+                        {chatHistory.length === 0 && (
+                          <div className="text-center text-gray-400 py-10">
+                            Ask anything about your growth journey...
+                          </div>
+                        )}
+                        {chatHistory.map((msg, i) => (
+                          <div
+                            key={i}
+                            className={`p-4 rounded-2xl ${
+                              msg.role === 'user'
+                                ? 'bg-orange-50 ml-8'
+                                : 'bg-[#f8f1e9] mr-8'
+                            }`}
+                          >
+                            <strong className="text-sm text-gray-500 block mb-1">
+                              {msg.role === 'user' ? 'You' : 'AI Mentor'}
+                            </strong>
+                            <p className="text-gray-800 whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <textarea
+                        placeholder="Ask anything..."
+                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none h-28"
+                        value={userMessage}
+                        onChange={e => setUserMessage(e.target.value)}
+                      />
+
+                      <button
+                        onClick={getAIAdvice}
+                        disabled={isLoading}
+                        className="w-full py-4 bg-[#ea580c] hover:bg-[#c2410c] disabled:bg-orange-300 text-white rounded-2xl text-lg font-semibold transition-colors"
+                      >
+                        {isLoading ? "AI is thinking..." : "Get Personalized Advice"}
+                      </button>
+
+                      {messageLimit >= 10 && (
+                        <p className="text-red-500 text-center mt-4">
+                          Daily limit reached (10 messages). Come back tomorrow!
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ========== AR GROWTH TREE ========== */}
+                {currentPage === 'tree' && (
+                  <div className="max-w-3xl mx-auto text-center">
+                    <h1 className="text-3xl font-bold text-[#9a3412] mb-2">🌳 Your Growth Tree</h1>
+                    <p className="text-gray-500 mb-6">AR Filter – Make invisible growth visible</p>
+
+                    <div className="relative w-full max-w-lg mx-auto rounded-3xl overflow-hidden shadow-2xl mb-8">
+                      <video
+                        id="cameraFeed"
+                        autoPlay
+                        playsInline
+                        className="w-full h-[420px] object-cover bg-black"
+                      />
+                      
+                      <div
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[140px] pointer-events-none z-10"
+                        style={{ animation: 'grow 3s infinite alternate', filter: 'drop-shadow(0 0 40px #4ade80)' }}
+                      >
+                        🌳
+                      </div>
+
+                      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-black/70 text-white px-6 py-2 rounded-full text-sm z-20">
+                        AR Filter Active • Level {Math.floor(user.streak / 3) + 1}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={startCamera}
+                      className="px-10 py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white rounded-full text-lg font-semibold shadow-lg transition-colors"
+                    >
+                      Start AR Camera (Selfie)
+                    </button>
+
+                    <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-orange-50 inline-block">
+                      <h3 className="font-bold text-lg text-[#9a3412]">Current Level: {Math.floor(user.streak / 3) + 1}</h3>
+                      <p className="text-gray-600 mt-1">Streak: {user.streak} days | Seeds: {user.seeds}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ========== CAREER ROADMAP (Placeholder) ========== */}
+                {currentPage === 'career' && (
+                  <div className="text-center py-20">
+                    <div className="text-6xl mb-4">🎯</div>
+                    <h2 className="text-2xl font-bold text-[#9a3412] mb-2">Career Roadmap</h2>
+                    <p className="text-gray-500">Coming very soon in Lumora v2...</p>
+                  </div>
+                )}
+
+              </div>
+            </main>
+
+            {/* ===== MOBILE BOTTOM NAV ===== */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 z-40 flex justify-around py-2 safe-area-pb">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => goToPage(item.id)}
+                  className={`flex flex-col items-center px-2 py-1.5 rounded-xl ${
+                    currentPage === item.id ? 'text-[#9a3412]' : 'text-gray-500'
+                  }`}
+                >
+                  <span className="text-xl">{item.icon}</span>
+                  <span className="text-[10px] mt-0.5 font-medium">{item.label.split(' ')[0]}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+        )}
       </div>
     </>
   );
 }
-
-const inputStyle = { width: '100%', padding: '16px', marginBottom: '16px', borderRadius: '12px', border: '2px solid #fed7aa', fontSize: '17px' };
-const buttonStyle = { width: '100%', padding: '18px', backgroundColor: '#ea580c', color: 'white', border: 'none', borderRadius: '16px', fontSize: '19px', marginTop: '20px', cursor: 'pointer' };
-const navButtonStyle = { padding: '10px 18px', backgroundColor: '#9a3412', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '15px' };
-const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '20px', textAlign: 'center' as const, boxShadow: '0 10px 15px rgba(0,0,0,0.08)' };
 
 export default App;
