@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
 import { getAIMentorResponse } from './aiService';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 function App() {
   // Page Navigation State
-  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard'>('login');
+  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard' | 'stats'>('login');
   
   // Login State
   const [loginId, setLoginId] = useState("");
@@ -37,14 +38,14 @@ function App() {
 
   // ==================== POMODORO STATE ====================
   const [pomodoroMode, setPomodoroMode] = useState<'work' | 'break'>('work');
-  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ==================== LEADERBOARD STATE ====================
   const [leaderboardTab, setLeaderboardTab] = useState<'streak' | 'seeds'>('streak');
 
-  // Demo leaderboard data
+  // Demo leaderboard data (only this remains demo)
   const demoLeaderboard = {
     streak: [
       { name: "Aarav", class: "9", value: 42, rank: 1 },
@@ -68,6 +69,10 @@ function App() {
     ]
   };
 
+  // ==================== STATS STATE ====================
+  const [reflectionsData, setReflectionsData] = useState<any[]>([]);
+  const [statsLoading, setStatsLoading] = useState(false);
+
   // Load saved user from localStorage on start
   useEffect(() => {
     const saved = localStorage.getItem('lumoraUser');
@@ -77,6 +82,36 @@ function App() {
     }
   }, []);
 
+  // Fetch real reflections when entering Stats page
+  useEffect(() => {
+    if (currentPage === 'stats' && user.id) {
+      fetchStatsData();
+    }
+  }, [currentPage, user.id]);
+
+  const fetchStatsData = async () => {
+    setStatsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('daily_reflections')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: true })
+        .limit(30);
+
+      if (error) {
+        console.error(error);
+        setReflectionsData([]);
+      } else {
+        setReflectionsData(data || []);
+      }
+    } catch (err) {
+      console.error(err);
+      setReflectionsData([]);
+    }
+    setStatsLoading(false);
+  };
+
   // ==================== POMODORO TIMER LOGIC ====================
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
@@ -85,7 +120,6 @@ function App() {
       }, 1000);
     } else if (timeLeft === 0) {
       setIsRunning(false);
-      // Switch mode when timer ends
       if (pomodoroMode === 'work') {
         setPomodoroMode('break');
         setTimeLeft(5 * 60);
@@ -332,6 +366,7 @@ function App() {
     { id: 'dashboard' as const, label: 'Dashboard', icon: '🏠' },
     { id: 'reflection' as const, label: 'Reflection', icon: '📝' },
     { id: 'ai' as const, label: 'AI Mentor', icon: '🤖' },
+    { id: 'stats' as const, label: 'Stats', icon: '📊' },
     { id: 'pomodoro' as const, label: 'Pomodoro', icon: '⏱️' },
     { id: 'leaderboard' as const, label: 'Leaderboard', icon: '🏆' },
     { id: 'tree' as const, label: 'Growth Tree', icon: '🌳' },
@@ -379,6 +414,31 @@ function App() {
     boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
     border: '1px solid #f3e8d8',
   };
+
+  // Prepare chart data
+  const studyHoursData = reflectionsData.map(r => ({
+    date: r.date ? r.date.slice(5) : '', // MM-DD
+    hours: Number(r.study_hours) || 0
+  }));
+
+  const moodMap: Record<string, number> = {
+    'Great': 5, 'Good': 4, 'Okay': 3, 'Tired': 2, 'Struggling': 1
+  };
+  const confidenceMap: Record<string, number> = {
+    'High': 3, 'Medium': 2, 'Low': 1
+  };
+
+  const moodData = reflectionsData.map(r => ({
+    date: r.date ? r.date.slice(5) : '',
+    mood: moodMap[r.mood] || 3
+  }));
+
+  const confidenceData = reflectionsData.map(r => ({
+    date: r.date ? r.date.slice(5) : '',
+    confidence: confidenceMap[r.confidence] || 2
+  }));
+
+  const totalHours = reflectionsData.reduce((sum, r) => sum + (Number(r.study_hours) || 0), 0);
 
   return (
     <>
@@ -434,20 +494,12 @@ function App() {
           color: white;
         }
 
-        .mobile-topbar {
-          display: none;
-        }
-        .mobile-bottom-nav {
-          display: none;
-        }
-        .mobile-menu-overlay {
-          display: none;
-        }
+        .mobile-topbar { display: none; }
+        .mobile-bottom-nav { display: none; }
+        .mobile-menu-overlay { display: none; }
 
         @media (max-width: 768px) {
-          .sidebar {
-            display: none;
-          }
+          .sidebar { display: none; }
           .main-content {
             margin-left: 0;
             padding: 80px 16px 90px 16px;
@@ -455,9 +507,7 @@ function App() {
           .mobile-topbar {
             display: flex;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
+            top: 0; left: 0; right: 0;
             height: 60px;
             background: white;
             border-bottom: 1px solid #f3e8d8;
@@ -469,9 +519,7 @@ function App() {
           .mobile-bottom-nav {
             display: flex;
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            bottom: 0; left: 0; right: 0;
             background: white;
             border-top: 1px solid #f3e8d8;
             justify-content: space-around;
@@ -488,9 +536,7 @@ function App() {
           }
           .mobile-sidebar {
             position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
+            left: 0; top: 0; bottom: 0;
             width: 270px;
             background: white;
             z-index: 70;
@@ -504,11 +550,7 @@ function App() {
         
         {/* Soft Forest Background */}
         <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundImage: 'url(/forest-bg.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
@@ -518,11 +560,7 @@ function App() {
         
         {/* Soft cream overlay */}
         <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(248, 241, 233, 0.70)',
           zIndex: 1,
         }} />
@@ -833,7 +871,111 @@ function App() {
                   </div>
                 )}
 
-                {/* ==================== POMODORO TIMER ==================== */}
+                {/* ==================== STATS PAGE ==================== */}
+                {currentPage === 'stats' && (
+                  <div>
+                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
+                      📊 Your Progress Stats
+                    </h1>
+                    <p style={{ color: '#6b7280', marginBottom: '28px' }}>
+                      Real data from your last 30 reflections
+                    </p>
+
+                    {statsLoading ? (
+                      <div style={{ textAlign: 'center', padding: '60px', color: '#9ca3af' }}>
+                        Loading your stats...
+                      </div>
+                    ) : (
+                      <>
+                        {/* Summary Cards */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '36px' }}>
+                          <div style={cardStyle}>
+                            <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Total Reflections</p>
+                            <p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{reflectionsData.length}</p>
+                          </div>
+                          <div style={cardStyle}>
+                            <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Total Study Hours</p>
+                            <p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{totalHours.toFixed(1)}</p>
+                          </div>
+                          <div style={cardStyle}>
+                            <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Current Streak</p>
+                            <p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{user.streak}</p>
+                          </div>
+                          <div style={cardStyle}>
+                            <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Total Seeds</p>
+                            <p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{user.seeds}</p>
+                          </div>
+                        </div>
+
+                        {reflectionsData.length === 0 ? (
+                          <div style={{ ...cardStyle, textAlign: 'center', padding: '50px' }}>
+                            <p style={{ fontSize: '18px', color: '#6b7280' }}>No reflections yet.</p>
+                            <p style={{ color: '#9ca3af', marginTop: '8px' }}>Complete a few daily reflections to see your graphs here.</p>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Study Hours Chart */}
+                            <div style={{ ...cardStyle, marginBottom: '28px' }}>
+                              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.text, marginBottom: '20px' }}>
+                                Study Hours (Last 30 days)
+                              </h3>
+                              <ResponsiveContainer width="100%" height={260}>
+                                <LineChart data={studyHoursData}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#f3e8d8" />
+                                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                                  <YAxis tick={{ fontSize: 12 }} />
+                                  <Tooltip />
+                                  <Line type="monotone" dataKey="hours" stroke="#ea580c" strokeWidth={3} dot={{ r: 4 }} />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+
+                            {/* Mood + Confidence Charts */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                              <div style={cardStyle}>
+                                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.text, marginBottom: '20px' }}>
+                                  Mood Trend
+                                </h3>
+                                <ResponsiveContainer width="100%" height={220}>
+                                  <BarChart data={moodData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f3e8d8" />
+                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                    <YAxis domain={[0, 5]} tick={{ fontSize: 12 }} />
+                                    <Tooltip />
+                                    <Bar dataKey="mood" fill="#9a3412" radius={[6, 6, 0, 0]} />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                                <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
+                                  5 = Great · 4 = Good · 3 = Okay · 2 = Tired · 1 = Struggling
+                                </p>
+                              </div>
+
+                              <div style={cardStyle}>
+                                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.text, marginBottom: '20px' }}>
+                                  Confidence Trend
+                                </h3>
+                                <ResponsiveContainer width="100%" height={220}>
+                                  <LineChart data={confidenceData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f3e8d8" />
+                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                    <YAxis domain={[0, 3]} tick={{ fontSize: 12 }} />
+                                    <Tooltip />
+                                    <Line type="monotone" dataKey="confidence" stroke="#ea580c" strokeWidth={3} dot={{ r: 4 }} />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                                <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
+                                  3 = High · 2 = Medium · 1 = Low
+                                </p>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* POMODORO */}
                 {currentPage === 'pomodoro' && (
                   <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
                     <div style={{ ...cardStyle, padding: '40px 32px' }}>
@@ -844,7 +986,6 @@ function App() {
                         Classic 25 min focus + 5 min break
                       </p>
 
-                      {/* Mode indicator */}
                       <div style={{
                         display: 'inline-block',
                         padding: '8px 20px',
@@ -858,7 +999,6 @@ function App() {
                         {pomodoroMode === 'work' ? '🔥 Focus Time' : '🌿 Break Time'}
                       </div>
 
-                      {/* Timer display */}
                       <div style={{
                         fontSize: '72px',
                         fontWeight: 'bold',
@@ -870,7 +1010,6 @@ function App() {
                         {formatTime(timeLeft)}
                       </div>
 
-                      {/* Controls */}
                       <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                         {!isRunning ? (
                           <button
@@ -930,7 +1069,7 @@ function App() {
                   </div>
                 )}
 
-                {/* ==================== LEADERBOARD ==================== */}
+                {/* LEADERBOARD */}
                 {currentPage === 'leaderboard' && (
                   <div style={{ maxWidth: '640px', margin: '0 auto' }}>
                     <div style={{ ...cardStyle, padding: '32px' }}>
@@ -941,7 +1080,6 @@ function App() {
                         Demo rankings • Real data coming soon
                       </p>
 
-                      {/* Tabs */}
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '28px' }}>
                         <button
                           onClick={() => setLeaderboardTab('streak')}
@@ -975,7 +1113,6 @@ function App() {
                         </button>
                       </div>
 
-                      {/* Rankings */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {demoLeaderboard[leaderboardTab].map((entry) => (
                           <div
@@ -989,7 +1126,6 @@ function App() {
                               border: entry.rank <= 3 ? '1px solid #fed7aa' : '1px solid #f3e8d8',
                             }}
                           >
-                            {/* Rank */}
                             <div style={{
                               width: '36px',
                               height: '36px',
@@ -1007,13 +1143,11 @@ function App() {
                               {entry.rank}
                             </div>
 
-                            {/* Name & Class */}
                             <div style={{ flex: 1 }}>
                               <p style={{ fontWeight: 600, color: colors.text }}>{entry.name}</p>
                               <p style={{ fontSize: '13px', color: '#9ca3af' }}>Class {entry.class}</p>
                             </div>
 
-                            {/* Value */}
                             <div style={{ fontWeight: 'bold', color: colors.primary, fontSize: '18px' }}>
                               {entry.value}
                               <span style={{ fontSize: '13px', fontWeight: 500, color: '#9ca3af', marginLeft: '4px' }}>
