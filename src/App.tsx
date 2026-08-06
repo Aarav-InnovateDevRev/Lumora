@@ -32,7 +32,7 @@ function App() {
   const [messageLimit, setMessageLimit] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mobile sidebar state
+  // Mobile menu
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Load saved user from localStorage on start
@@ -44,7 +44,7 @@ function App() {
     }
   }, []);
 
-  // ==================== LOGIN WITH SUPABASE ====================
+  // ==================== LOGIN ====================
   const handleLogin = async () => {
     setLoginError("");
     const { data, error } = await supabase
@@ -103,7 +103,7 @@ function App() {
     setCurrentPage('dashboard');
   };
 
-  // ==================== ONBOARDING WITH SUPABASE ====================
+  // ==================== ONBOARDING ====================
   const finishOnboarding = async () => {
     if (!user.id || !user.name || !user.class || !user.goal) {
       alert("❌ Please fill all fields!");
@@ -143,7 +143,7 @@ function App() {
     setCurrentPage('dashboard');
   };
 
-  // ==================== SAVE REFLECTION + STREAK + SEEDS ====================
+  // ==================== SAVE REFLECTION ====================
   const saveReflection = async () => {
     const today = new Date().toISOString().split('T')[0];
     if (localStorage.getItem('lastReflectionDate') === today) {
@@ -193,7 +193,7 @@ function App() {
     setCurrentPage('dashboard');
   };
 
-  // ==================== AI MENTOR WITH PERSONALIZATION ====================
+  // ==================== AI MENTOR ====================
   const getAIAdvice = async () => {
     if (messageLimit >= 10) {
       alert("You have reached the daily limit of 10 messages. Come back tomorrow! 🌱");
@@ -234,7 +234,7 @@ function App() {
     setIsLoading(false);
   };
 
-  // ==================== AR CAMERA FILTER ====================
+  // ==================== AR CAMERA ====================
   const startCamera = () => {
     const video = document.getElementById('cameraFeed') as HTMLVideoElement;
     if (video) {
@@ -250,85 +250,189 @@ function App() {
     }
   };
 
-  // Helper to change page and close mobile menu
   const goToPage = (page: typeof currentPage) => {
     setCurrentPage(page);
     setIsMobileMenuOpen(false);
   };
 
-  // ==================== SIDEBAR NAVIGATION ITEMS ====================
+  // Navigation items
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-    { id: 'reflection', label: 'Reflection', icon: '📝' },
-    { id: 'ai', label: 'AI Mentor', icon: '🤖' },
-    { id: 'tree', label: 'Growth Tree', icon: '🌳' },
-    { id: 'career', label: 'Career Roadmap', icon: '🎯' },
-  ] as const;
+    { id: 'dashboard' as const, label: 'Dashboard', icon: '🏠' },
+    { id: 'reflection' as const, label: 'Reflection', icon: '📝' },
+    { id: 'ai' as const, label: 'AI Mentor', icon: '🤖' },
+    { id: 'tree' as const, label: 'Growth Tree', icon: '🌳' },
+    { id: 'career' as const, label: 'Career', icon: '🎯' },
+  ];
 
-  // ==================== RENDER ====================
+  // ==================== STYLES ====================
+  const colors = {
+    bg: '#f8f1e9',
+    primary: '#9a3412',
+    accent: '#ea580c',
+    white: '#ffffff',
+    border: '#fed7aa',
+    text: '#374151',
+  };
+
   return (
     <>
       <style>{`
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: ${colors.bg}; }
+        
         @keyframes grow {
           from { transform: scale(0.85); }
           to { transform: scale(1.15); }
         }
-        
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-          width: 6px;
+
+        /* Desktop sidebar */
+        .sidebar {
+          position: fixed;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 250px;
+          background: ${colors.white};
+          border-right: 1px solid #f3e8d8;
+          display: flex;
+          flex-direction: column;
+          z-index: 40;
         }
-        ::-webkit-scrollbar-track {
-          background: #f8f1e9;
+
+        .main-content {
+          margin-left: 250px;
+          min-height: 100vh;
+          padding: 32px 40px;
         }
-        ::-webkit-scrollbar-thumb {
-          background: #d6a67a;
-          border-radius: 10px;
+
+        .nav-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          padding: 14px 18px;
+          border: none;
+          border-radius: 12px;
+          background: transparent;
+          color: ${colors.text};
+          font-size: 15px;
+          font-weight: 500;
+          cursor: pointer;
+          text-align: left;
+          transition: all 0.15s;
+        }
+        .nav-item:hover {
+          background: #fff7ed;
+        }
+        .nav-item.active {
+          background: ${colors.primary};
+          color: white;
+        }
+
+        /* Mobile */
+        .mobile-topbar {
+          display: none;
+        }
+        .mobile-bottom-nav {
+          display: none;
+        }
+        .mobile-menu-overlay {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .sidebar {
+            display: none;
+          }
+          .main-content {
+            margin-left: 0;
+            padding: 80px 16px 90px 16px;
+          }
+          .mobile-topbar {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #f3e8d8;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 50;
+          }
+          .mobile-bottom-nav {
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #f3e8d8;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 50;
+          }
+          .mobile-menu-overlay {
+            display: block;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 60;
+          }
+          .mobile-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 270px;
+            background: white;
+            z-index: 70;
+            padding: 20px;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+          }
         }
       `}</style>
 
-      <div className="min-h-screen bg-[#f8f1e9] font-sans text-gray-800">
-        
-        {/* ========== LOGIN & ONBOARDING (Full screen, no sidebar) ========== */}
+      <div style={{ minHeight: '100vh', backgroundColor: colors.bg }}>
+
+        {/* ========== LOGIN & ONBOARDING ========== */}
         {(currentPage === 'login' || currentPage === 'onboarding') ? (
-          <div className="min-h-screen flex items-center justify-center p-4">
+          <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            
             {currentPage === 'login' && (
-              <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 md:p-12">
-                <div className="flex flex-col items-center mb-8">
-                  <img src="/logo.png" alt="Lumora Logo" className="h-16 mb-3" />
-                  <h1 className="text-3xl md:text-4xl font-bold text-[#9a3412]">Welcome to Lumora</h1>
-                  <p className="text-gray-500 mt-2 text-center">Your AI Growth Companion</p>
+              <div style={{ width: '100%', maxWidth: '420px', background: colors.white, borderRadius: '24px', padding: '48px 40px', boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }}>
+                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                  <img src="/logo.png" alt="Lumora" style={{ height: '56px', marginBottom: '12px' }} />
+                  <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>Welcome to Lumora</h1>
+                  <p style={{ color: '#6b7280', marginTop: '8px' }}>Your AI Growth Companion</p>
                 </div>
 
                 <input
                   type="text"
                   placeholder="User ID"
-                  className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none text-lg"
                   value={loginId}
                   onChange={e => setLoginId(e.target.value)}
+                  style={inputStyle}
                 />
                 <input
                   type="password"
                   placeholder="Password"
-                  className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none text-lg"
                   value={loginPassword}
                   onChange={e => setLoginPassword(e.target.value)}
+                  style={inputStyle}
                 />
-                
-                {loginError && <p className="text-red-500 text-center mb-4">{loginError}</p>}
-                
-                <button
-                  onClick={handleLogin}
-                  className="w-full py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white rounded-2xl text-lg font-semibold transition-colors"
-                >
-                  Login
-                </button>
-                
-                <p className="text-center mt-6 text-gray-600">
+
+                {loginError && <p style={{ color: '#ef4444', textAlign: 'center', marginBottom: '16px' }}>{loginError}</p>}
+
+                <button onClick={handleLogin} style={buttonStyle}>Login</button>
+
+                <p style={{ textAlign: 'center', marginTop: '24px', color: '#6b7280' }}>
                   New here?{' '}
                   <button
                     onClick={() => setCurrentPage('onboarding')}
-                    className="text-[#ea580c] font-medium hover:underline"
+                    style={{ color: colors.accent, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 500 }}
                   >
                     Create Account
                   </button>
@@ -337,23 +441,23 @@ function App() {
             )}
 
             {currentPage === 'onboarding' && (
-              <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl p-8 md:p-12">
-                <div className="flex flex-col items-center mb-8">
-                  <img src="/logo.png" alt="Lumora Logo" className="h-14 mb-3" />
-                  <h1 className="text-3xl font-bold text-[#9a3412]">Create Your Profile</h1>
+              <div style={{ width: '100%', maxWidth: '520px', background: colors.white, borderRadius: '24px', padding: '48px 40px', boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }}>
+                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                  <img src="/logo.png" alt="Lumora" style={{ height: '48px', marginBottom: '12px' }} />
+                  <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary }}>Create Your Profile</h1>
                 </div>
 
-                <input type="text" placeholder="Unique User ID" className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none" value={user.id} onChange={e => setUser(p => ({...p, id: e.target.value}))} />
-                <input type="text" placeholder="Full Name" className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none" value={user.name} onChange={e => setUser(p => ({...p, name: e.target.value}))} />
-                <input type="text" placeholder="Class" className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none" value={user.class} onChange={e => setUser(p => ({...p, class: e.target.value}))} />
-                <input type="text" placeholder="Your Big Goal" className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none" value={user.goal} onChange={e => setUser(p => ({...p, goal: e.target.value}))} />
-                <input type="password" placeholder="Set Password" className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none" value={user.password} onChange={e => setUser(p => ({...p, password: e.target.value}))} />
+                <input type="text" placeholder="Unique User ID" value={user.id} onChange={e => setUser(p => ({...p, id: e.target.value}))} style={inputStyle} />
+                <input type="text" placeholder="Full Name" value={user.name} onChange={e => setUser(p => ({...p, name: e.target.value}))} style={inputStyle} />
+                <input type="text" placeholder="Class" value={user.class} onChange={e => setUser(p => ({...p, class: e.target.value}))} style={inputStyle} />
+                <input type="text" placeholder="Your Big Goal" value={user.goal} onChange={e => setUser(p => ({...p, goal: e.target.value}))} style={inputStyle} />
+                <input type="password" placeholder="Set Password" value={user.password} onChange={e => setUser(p => ({...p, password: e.target.value}))} style={inputStyle} />
 
-                <label className="block mb-2 font-medium text-gray-700">What do you usually feel while studying?</label>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: colors.text }}>What do you usually feel while studying?</label>
                 <select
-                  className="w-full px-4 py-3.5 mb-6 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none"
                   value={user.studyFeeling}
                   onChange={e => setUser(p => ({...p, studyFeeling: e.target.value}))}
+                  style={inputStyle}
                 >
                   <option value="Focused">Focused</option>
                   <option value="Motivated">Motivated</option>
@@ -362,95 +466,90 @@ function App() {
                   <option value="Tired">Tired</option>
                 </select>
 
-                <button
-                  onClick={finishOnboarding}
-                  className="w-full py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white rounded-2xl text-lg font-semibold transition-colors"
-                >
-                  Create Profile & Start
-                </button>
+                <button onClick={finishOnboarding} style={buttonStyle}>Create Profile & Start</button>
               </div>
             )}
           </div>
         ) : (
-          /* ========== MAIN APP LAYOUT (Sidebar + Content) ========== */
-          <div className="flex min-h-screen">
-            
-            {/* ===== LEFT SIDEBAR (Desktop) ===== */}
-            <aside className="hidden md:flex flex-col w-64 bg-white border-r border-orange-100 shadow-sm fixed h-full z-30">
+          /* ========== MAIN APP WITH SIDEBAR ========== */
+          <>
+            {/* Desktop Sidebar */}
+            <aside className="sidebar">
               {/* Logo */}
-              <div className="flex items-center gap-3 px-6 py-6 border-b border-orange-50">
-                <img src="/logo.png" alt="Lumora" className="h-10" />
-                <h1 className="text-2xl font-bold text-[#9a3412]">Lumora</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '24px 20px', borderBottom: '1px solid #f3e8d8' }}>
+                <img src="/logo.png" alt="Lumora" style={{ height: '40px' }} />
+                <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary }}>Lumora</h1>
               </div>
 
-              {/* Navigation */}
-              <nav className="flex-1 px-4 py-6 space-y-2">
-                {navItems.map((item) => (
+              {/* Nav Items */}
+              <nav style={{ flex: 1, padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {navItems.map(item => (
                   <button
                     key={item.id}
                     onClick={() => goToPage(item.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all ${
-                      currentPage === item.id
-                        ? 'bg-[#9a3412] text-white shadow-md'
-                        : 'text-gray-700 hover:bg-orange-50'
-                    }`}
+                    className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
                   >
-                    <span className="text-xl">{item.icon}</span>
-                    <span className="font-medium">{item.label}</span>
+                    <span style={{ fontSize: '20px' }}>{item.icon}</span>
+                    <span>{item.label}</span>
                   </button>
                 ))}
               </nav>
 
-              {/* User mini profile at bottom */}
-              <div className="px-4 py-5 border-t border-orange-50">
-                <div className="flex items-center gap-3 px-3 py-2">
-                  <div className="w-10 h-10 rounded-full bg-[#ea580c] flex items-center justify-center text-white font-bold text-lg">
+              {/* User info at bottom */}
+              <div style={{ padding: '16px 20px', borderTop: '1px solid #f3e8d8' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '40px', height: '40px', borderRadius: '50%',
+                    background: colors.accent, color: 'white',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 'bold', fontSize: '18px'
+                  }}>
                     {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
-                  <div className="overflow-hidden">
-                    <p className="font-semibold text-sm truncate">{user.name || 'Student'}</p>
-                    <p className="text-xs text-gray-500 truncate">Class {user.class}</p>
+                  <div style={{ overflow: 'hidden' }}>
+                    <p style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {user.name || 'Student'}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#9ca3af' }}>Class {user.class}</p>
                   </div>
                 </div>
               </div>
             </aside>
 
-            {/* ===== MOBILE TOP BAR ===== */}
-            <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-orange-100 z-40 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <img src="/logo.png" alt="Lumora" className="h-8" />
-                <span className="text-xl font-bold text-[#9a3412]">Lumora</span>
+            {/* Mobile Top Bar */}
+            <div className="mobile-topbar">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <img src="/logo.png" alt="Lumora" style={{ height: '32px' }} />
+                <span style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary }}>Lumora</span>
               </div>
               <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-lg bg-orange-50 text-[#9a3412]"
+                onClick={() => setIsMobileMenuOpen(true)}
+                style={{
+                  background: '#fff7ed', border: 'none', borderRadius: '10px',
+                  padding: '8px 12px', fontSize: '20px', cursor: 'pointer', color: colors.primary
+                }}
               >
-                {isMobileMenuOpen ? '✕' : '☰'}
+                ☰
               </button>
             </div>
 
-            {/* ===== MOBILE SIDEBAR OVERLAY ===== */}
+            {/* Mobile Menu Overlay */}
             {isMobileMenuOpen && (
-              <div className="md:hidden fixed inset-0 z-50">
-                <div className="absolute inset-0 bg-black/40" onClick={() => setIsMobileMenuOpen(false)}></div>
-                <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl p-5">
-                  <div className="flex items-center gap-3 mb-8">
-                    <img src="/logo.png" alt="Lumora" className="h-10" />
-                    <h1 className="text-2xl font-bold text-[#9a3412]">Lumora</h1>
+              <div className="mobile-menu-overlay" onClick={() => setIsMobileMenuOpen(false)}>
+                <div className="mobile-sidebar" onClick={e => e.stopPropagation()}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+                    <img src="/logo.png" alt="Lumora" style={{ height: '40px' }} />
+                    <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: colors.primary }}>Lumora</h1>
                   </div>
-                  <nav className="space-y-2">
-                    {navItems.map((item) => (
+                  <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {navItems.map(item => (
                       <button
                         key={item.id}
                         onClick={() => goToPage(item.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left ${
-                          currentPage === item.id
-                            ? 'bg-[#9a3412] text-white'
-                            : 'text-gray-700 hover:bg-orange-50'
-                        }`}
+                        className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
                       >
-                        <span className="text-xl">{item.icon}</span>
-                        <span className="font-medium">{item.label}</span>
+                        <span style={{ fontSize: '20px' }}>{item.icon}</span>
+                        <span>{item.label}</span>
                       </button>
                     ))}
                   </nav>
@@ -458,259 +557,330 @@ function App() {
               </div>
             )}
 
-            {/* ===== MAIN CONTENT AREA ===== */}
-            <main className="flex-1 md:ml-64 min-h-screen pt-16 md:pt-0 pb-20 md:pb-8">
-              <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+            {/* Main Content */}
+            <main className="main-content">
 
-                {/* ========== DASHBOARD ========== */}
-                {currentPage === 'dashboard' && (
-                  <div>
-                    {/* Welcome Banner */}
-                    <div className="bg-gradient-to-r from-[#9a3412] to-[#ea580c] rounded-3xl p-6 md:p-8 text-white mb-8 shadow-lg">
-                      <h1 className="text-2xl md:text-3xl font-bold mb-1">Welcome back, {user.name}!</h1>
-                      <p className="opacity-90">Keep growing. Every day counts. 🌱</p>
+              {/* ===== DASHBOARD ===== */}
+              {currentPage === 'dashboard' && (
+                <div>
+                  {/* Welcome Banner */}
+                  <div style={{
+                    background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`,
+                    borderRadius: '20px',
+                    padding: '28px 32px',
+                    color: 'white',
+                    marginBottom: '32px',
+                    boxShadow: '0 8px 24px rgba(154,52,18,0.25)'
+                  }}>
+                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '6px' }}>
+                      Welcome back, {user.name}!
+                    </h1>
+                    <p style={{ opacity: 0.9 }}>Keep growing. Every day counts. 🌱</p>
+                  </div>
+
+                  {/* Stats Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+                    <div style={cardStyle}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', marginBottom: '12px' }}>
+                        <span style={{ fontSize: '22px' }}>🔥</span>
+                        <span style={{ fontWeight: 500 }}>Streak</span>
+                      </div>
+                      <p style={{ fontSize: '42px', fontWeight: 'bold', color: colors.primary }}>
+                        {user.streak} <span style={{ fontSize: '18px', fontWeight: 500, color: '#9ca3af' }}>days</span>
+                      </p>
                     </div>
 
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
-                      <div className="bg-white rounded-2xl p-6 shadow-sm border border-orange-50">
-                        <div className="flex items-center gap-2 text-gray-600 mb-3">
-                          <span className="text-2xl">🔥</span>
-                          <span className="font-medium">Streak</span>
-                        </div>
-                        <p className="text-4xl md:text-5xl font-bold text-[#9a3412]">{user.streak} <span className="text-xl font-medium text-gray-500">days</span></p>
+                    <div style={cardStyle}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', marginBottom: '12px' }}>
+                        <span style={{ fontSize: '22px' }}>🌱</span>
+                        <span style={{ fontWeight: 500 }}>Seeds</span>
                       </div>
-
-                      <div className="bg-white rounded-2xl p-6 shadow-sm border border-orange-50">
-                        <div className="flex items-center gap-2 text-gray-600 mb-3">
-                          <span className="text-2xl">🌱</span>
-                          <span className="font-medium">Seeds</span>
-                        </div>
-                        <p className="text-4xl md:text-5xl font-bold text-[#9a3412]">{user.seeds}</p>
-                      </div>
-                    </div>
-
-                    {/* Hidden Discoveries */}
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-800 mb-4">Hidden Discoveries</h2>
-                      <div className="space-y-3">
-                        {hiddenDiscoveries.map((d, i) => (
-                          <div
-                            key={i}
-                            className="bg-white rounded-2xl px-5 py-4 shadow-sm border border-orange-50 flex items-center justify-between"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="text-xl">✨</span>
-                              <span className="text-gray-700">{d}</span>
-                            </div>
-                            <button
-                              onClick={() => setHiddenDiscoveries(prev => prev.filter((_, index) => index !== i))}
-                              className="text-red-400 hover:text-red-600 text-lg p-1"
-                            >
-                              🗑
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                      <p style={{ fontSize: '42px', fontWeight: 'bold', color: colors.primary }}>{user.seeds}</p>
                     </div>
                   </div>
-                )}
 
-                {/* ========== DAILY REFLECTION ========== */}
-                {currentPage === 'reflection' && (
-                  <div className="max-w-2xl mx-auto">
-                    <div className="bg-white rounded-3xl shadow-sm border border-orange-50 p-6 md:p-10">
-                      <h2 className="text-2xl font-bold text-[#9a3412] mb-6">Daily Reflection</h2>
-
-                      <input
-                        type="text"
-                        placeholder="Hours studied today"
-                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none"
-                        value={reflection.studyHours}
-                        onChange={e => setReflection(p => ({...p, studyHours: e.target.value}))}
-                      />
-
-                      <textarea
-                        placeholder="Subjects studied (comma separated)"
-                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none h-24"
-                        value={reflection.subjects}
-                        onChange={e => setReflection(p => ({...p, subjects: e.target.value}))}
-                      />
-
-                      <label className="block mb-2 font-medium text-gray-700">Mood Today</label>
-                      <select
-                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none"
-                        value={reflection.mood}
-                        onChange={e => setReflection(p => ({...p, mood: e.target.value}))}
-                      >
-                        <option value="Great">Great</option>
-                        <option value="Good">Good</option>
-                        <option value="Okay">Okay</option>
-                        <option value="Tired">Tired</option>
-                        <option value="Struggling">Struggling</option>
-                      </select>
-
-                      <label className="block mb-2 font-medium text-gray-700">Confidence Level</label>
-                      <select
-                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none"
-                        value={reflection.confidence}
-                        onChange={e => setReflection(p => ({...p, confidence: e.target.value}))}
-                      >
-                        <option value="High">High</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Low">Low</option>
-                      </select>
-
-                      <textarea
-                        placeholder="Wins today"
-                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none h-28"
-                        value={reflection.wins}
-                        onChange={e => setReflection(p => ({...p, wins: e.target.value}))}
-                      />
-
-                      <textarea
-                        placeholder="Struggles"
-                        className="w-full px-4 py-3.5 mb-6 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none h-28"
-                        value={reflection.struggles}
-                        onChange={e => setReflection(p => ({...p, struggles: e.target.value}))}
-                      />
-
-                      <button
-                        onClick={saveReflection}
-                        className="w-full py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white rounded-2xl text-lg font-semibold transition-colors"
-                      >
-                        Save Reflection
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* ========== AI GROWTH MENTOR ========== */}
-                {currentPage === 'ai' && (
-                  <div className="max-w-3xl mx-auto">
-                    <div className="bg-white rounded-3xl shadow-sm border border-orange-50 p-6 md:p-8">
-                      <h2 className="text-2xl font-bold text-[#9a3412] mb-2">🤖 Your AI Growth Mentor</h2>
-                      <p className="text-gray-500 mb-6">Personalized using your profile and latest reflections (10 messages/day)</p>
-
-                      <div className="mb-6 max-h-96 overflow-y-auto space-y-3 pr-2">
-                        {chatHistory.length === 0 && (
-                          <div className="text-center text-gray-400 py-10">
-                            Ask anything about your growth journey...
-                          </div>
-                        )}
-                        {chatHistory.map((msg, i) => (
-                          <div
-                            key={i}
-                            className={`p-4 rounded-2xl ${
-                              msg.role === 'user'
-                                ? 'bg-orange-50 ml-8'
-                                : 'bg-[#f8f1e9] mr-8'
-                            }`}
-                          >
-                            <strong className="text-sm text-gray-500 block mb-1">
-                              {msg.role === 'user' ? 'You' : 'AI Mentor'}
-                            </strong>
-                            <p className="text-gray-800 whitespace-pre-wrap">{msg.content}</p>
-                          </div>
-                        ))}
+                  {/* Hidden Discoveries */}
+                  <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.text, marginBottom: '16px' }}>
+                    Hidden Discoveries
+                  </h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {hiddenDiscoveries.map((d, i) => (
+                      <div key={i} style={{
+                        background: colors.white,
+                        borderRadius: '16px',
+                        padding: '16px 20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        border: '1px solid #f3e8d8'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ fontSize: '18px' }}>✨</span>
+                          <span style={{ color: colors.text }}>{d}</span>
+                        </div>
+                        <button
+                          onClick={() => setHiddenDiscoveries(prev => prev.filter((_, idx) => idx !== i))}
+                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '18px' }}
+                        >
+                          🗑
+                        </button>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                      <textarea
-                        placeholder="Ask anything..."
-                        className="w-full px-4 py-3.5 mb-4 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none h-28"
-                        value={userMessage}
-                        onChange={e => setUserMessage(e.target.value)}
-                      />
+              {/* ===== REFLECTION ===== */}
+              {currentPage === 'reflection' && (
+                <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+                  <div style={{ ...cardStyle, padding: '36px' }}>
+                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '24px' }}>
+                      Daily Reflection
+                    </h2>
 
-                      <button
-                        onClick={getAIAdvice}
-                        disabled={isLoading}
-                        className="w-full py-4 bg-[#ea580c] hover:bg-[#c2410c] disabled:bg-orange-300 text-white rounded-2xl text-lg font-semibold transition-colors"
-                      >
-                        {isLoading ? "AI is thinking..." : "Get Personalized Advice"}
-                      </button>
+                    <input type="text" placeholder="Hours studied today" value={reflection.studyHours} onChange={e => setReflection(p => ({...p, studyHours: e.target.value}))} style={inputStyle} />
+                    <textarea placeholder="Subjects studied (comma separated)" value={reflection.subjects} onChange={e => setReflection(p => ({...p, subjects: e.target.value}))} style={{ ...inputStyle, height: '80px', resize: 'vertical' }} />
 
-                      {messageLimit >= 10 && (
-                        <p className="text-red-500 text-center mt-4">
-                          Daily limit reached (10 messages). Come back tomorrow!
-                        </p>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Mood Today</label>
+                    <select value={reflection.mood} onChange={e => setReflection(p => ({...p, mood: e.target.value}))} style={inputStyle}>
+                      <option value="Great">Great</option>
+                      <option value="Good">Good</option>
+                      <option value="Okay">Okay</option>
+                      <option value="Tired">Tired</option>
+                      <option value="Struggling">Struggling</option>
+                    </select>
+
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Confidence Level</label>
+                    <select value={reflection.confidence} onChange={e => setReflection(p => ({...p, confidence: e.target.value}))} style={inputStyle}>
+                      <option value="High">High</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Low">Low</option>
+                    </select>
+
+                    <textarea placeholder="Wins today" value={reflection.wins} onChange={e => setReflection(p => ({...p, wins: e.target.value}))} style={{ ...inputStyle, height: '90px', resize: 'vertical' }} />
+                    <textarea placeholder="Struggles" value={reflection.struggles} onChange={e => setReflection(p => ({...p, struggles: e.target.value}))} style={{ ...inputStyle, height: '90px', resize: 'vertical' }} />
+
+                    <button onClick={saveReflection} style={buttonStyle}>Save Reflection</button>
+                  </div>
+                </div>
+              )}
+
+              {/* ===== AI MENTOR ===== */}
+              {currentPage === 'ai' && (
+                <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+                  <div style={{ ...cardStyle, padding: '32px' }}>
+                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>
+                      🤖 Your AI Growth Mentor
+                    </h2>
+                    <p style={{ color: '#6b7280', marginBottom: '24px' }}>
+                      Personalized using your profile and latest reflections (10 messages/day)
+                    </p>
+
+                    <div style={{ maxHeight: '360px', overflowY: 'auto', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {chatHistory.length === 0 && (
+                        <div style={{ textAlign: 'center', color: '#9ca3af', padding: '40px 0' }}>
+                          Ask anything about your growth journey...
+                        </div>
                       )}
+                      {chatHistory.map((msg, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            padding: '14px 18px',
+                            borderRadius: '14px',
+                            background: msg.role === 'user' ? '#fff7ed' : '#f8f1e9',
+                            marginLeft: msg.role === 'user' ? '40px' : '0',
+                            marginRight: msg.role === 'assistant' ? '40px' : '0',
+                          }}
+                        >
+                          <strong style={{ fontSize: '13px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
+                            {msg.role === 'user' ? 'You' : 'AI Mentor'}
+                          </strong>
+                          <p style={{ whiteSpace: 'pre-wrap', color: colors.text }}>{msg.content}</p>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                )}
 
-                {/* ========== AR GROWTH TREE ========== */}
-                {currentPage === 'tree' && (
-                  <div className="max-w-3xl mx-auto text-center">
-                    <h1 className="text-3xl font-bold text-[#9a3412] mb-2">🌳 Your Growth Tree</h1>
-                    <p className="text-gray-500 mb-6">AR Filter – Make invisible growth visible</p>
-
-                    <div className="relative w-full max-w-lg mx-auto rounded-3xl overflow-hidden shadow-2xl mb-8">
-                      <video
-                        id="cameraFeed"
-                        autoPlay
-                        playsInline
-                        className="w-full h-[420px] object-cover bg-black"
-                      />
-                      
-                      <div
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[140px] pointer-events-none z-10"
-                        style={{ animation: 'grow 3s infinite alternate', filter: 'drop-shadow(0 0 40px #4ade80)' }}
-                      >
-                        🌳
-                      </div>
-
-                      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-black/70 text-white px-6 py-2 rounded-full text-sm z-20">
-                        AR Filter Active • Level {Math.floor(user.streak / 3) + 1}
-                      </div>
-                    </div>
+                    <textarea
+                      placeholder="Ask anything..."
+                      value={userMessage}
+                      onChange={e => setUserMessage(e.target.value)}
+                      style={{ ...inputStyle, height: '100px', resize: 'vertical' }}
+                    />
 
                     <button
-                      onClick={startCamera}
-                      className="px-10 py-4 bg-[#ea580c] hover:bg-[#c2410c] text-white rounded-full text-lg font-semibold shadow-lg transition-colors"
+                      onClick={getAIAdvice}
+                      disabled={isLoading}
+                      style={{ ...buttonStyle, opacity: isLoading ? 0.7 : 1 }}
                     >
-                      Start AR Camera (Selfie)
+                      {isLoading ? "AI is thinking..." : "Get Personalized Advice"}
                     </button>
 
-                    <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-orange-50 inline-block">
-                      <h3 className="font-bold text-lg text-[#9a3412]">Current Level: {Math.floor(user.streak / 3) + 1}</h3>
-                      <p className="text-gray-600 mt-1">Streak: {user.streak} days | Seeds: {user.seeds}</p>
+                    {messageLimit >= 10 && (
+                      <p style={{ color: '#ef4444', textAlign: 'center', marginTop: '12px' }}>
+                        Daily limit reached (10 messages). Come back tomorrow!
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ===== GROWTH TREE ===== */}
+              {currentPage === 'tree' && (
+                <div style={{ maxWidth: '700px', margin: '0 auto', textAlign: 'center' }}>
+                  <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
+                    🌳 Your Growth Tree
+                  </h1>
+                  <p style={{ color: '#6b7280', marginBottom: '28px' }}>AR Filter – Make invisible growth visible</p>
+
+                  <div style={{
+                    position: 'relative',
+                    width: '100%',
+                    maxWidth: '520px',
+                    margin: '0 auto 28px',
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.25)'
+                  }}>
+                    <video
+                      id="cameraFeed"
+                      autoPlay
+                      playsInline
+                      style={{ width: '100%', height: '400px', objectFit: 'cover', background: '#111' }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      fontSize: '140px',
+                      animation: 'grow 3s infinite alternate',
+                      filter: 'drop-shadow(0 0 40px #4ade80)',
+                      pointerEvents: 'none',
+                      zIndex: 10
+                    }}>
+                      🌳
+                    </div>
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '20px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'rgba(0,0,0,0.7)',
+                      color: 'white',
+                      padding: '8px 20px',
+                      borderRadius: '999px',
+                      fontSize: '14px',
+                      zIndex: 20
+                    }}>
+                      AR Filter Active • Level {Math.floor(user.streak / 3) + 1}
                     </div>
                   </div>
-                )}
 
-                {/* ========== CAREER ROADMAP (Placeholder) ========== */}
-                {currentPage === 'career' && (
-                  <div className="text-center py-20">
-                    <div className="text-6xl mb-4">🎯</div>
-                    <h2 className="text-2xl font-bold text-[#9a3412] mb-2">Career Roadmap</h2>
-                    <p className="text-gray-500">Coming very soon in Lumora v2...</p>
+                  <button
+                    onClick={startCamera}
+                    style={{
+                      padding: '16px 40px',
+                      background: colors.accent,
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '999px',
+                      fontSize: '17px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      boxShadow: '0 8px 24px rgba(234,88,12,0.35)'
+                    }}
+                  >
+                    Start AR Camera (Selfie)
+                  </button>
+
+                  <div style={{ ...cardStyle, marginTop: '32px', display: 'inline-block', minWidth: '260px' }}>
+                    <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: colors.primary }}>
+                      Current Level: {Math.floor(user.streak / 3) + 1}
+                    </h3>
+                    <p style={{ color: '#6b7280', marginTop: '6px' }}>
+                      Streak: {user.streak} days | Seeds: {user.seeds}
+                    </p>
                   </div>
-                )}
+                </div>
+              )}
 
-              </div>
+              {/* ===== CAREER PLACEHOLDER ===== */}
+              {currentPage === 'career' && (
+                <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+                  <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎯</div>
+                  <h2 style={{ fontSize: '26px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
+                    Career Roadmap
+                  </h2>
+                  <p style={{ color: '#6b7280' }}>Coming very soon in Lumora v2...</p>
+                </div>
+              )}
+
             </main>
 
-            {/* ===== MOBILE BOTTOM NAV ===== */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 z-40 flex justify-around py-2 safe-area-pb">
-              {navItems.map((item) => (
+            {/* Mobile Bottom Navigation */}
+            <nav className="mobile-bottom-nav">
+              {navItems.map(item => (
                 <button
                   key={item.id}
                   onClick={() => goToPage(item.id)}
-                  className={`flex flex-col items-center px-2 py-1.5 rounded-xl ${
-                    currentPage === item.id ? 'text-[#9a3412]' : 'text-gray-500'
-                  }`}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    background: 'none',
+                    border: 'none',
+                    padding: '6px 10px',
+                    cursor: 'pointer',
+                    color: currentPage === item.id ? colors.primary : '#9ca3af',
+                    fontSize: '11px',
+                    fontWeight: 500
+                  }}
                 >
-                  <span className="text-xl">{item.icon}</span>
-                  <span className="text-[10px] mt-0.5 font-medium">{item.label.split(' ')[0]}</span>
+                  <span style={{ fontSize: '22px' }}>{item.icon}</span>
+                  <span style={{ marginTop: '2px' }}>{item.label.split(' ')[0]}</span>
                 </button>
               ))}
             </nav>
-          </div>
+          </>
         )}
       </div>
     </>
   );
 }
+
+// Shared styles
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '14px 16px',
+  marginBottom: '14px',
+  borderRadius: '12px',
+  border: '2px solid #fed7aa',
+  fontSize: '16px',
+  outline: 'none',
+  background: 'white',
+};
+
+const buttonStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '16px',
+  backgroundColor: '#ea580c',
+  color: 'white',
+  border: 'none',
+  borderRadius: '14px',
+  fontSize: '17px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  marginTop: '8px',
+};
+
+const cardStyle: React.CSSProperties = {
+  backgroundColor: 'white',
+  borderRadius: '18px',
+  padding: '24px',
+  boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+  border: '1px solid #f3e8d8',
+};
 
 export default App;
