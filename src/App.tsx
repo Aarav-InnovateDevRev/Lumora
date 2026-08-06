@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
 import { getAIMentorResponse } from './aiService';
 
 function App() {
   // Page Navigation State
-  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career'>('login');
+  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard'>('login');
   
   // Login State
   const [loginId, setLoginId] = useState("");
@@ -35,6 +35,39 @@ function App() {
   // Mobile menu
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // ==================== POMODORO STATE ====================
+  const [pomodoroMode, setPomodoroMode] = useState<'work' | 'break'>('work');
+  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
+  const [isRunning, setIsRunning] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ==================== LEADERBOARD STATE ====================
+  const [leaderboardTab, setLeaderboardTab] = useState<'streak' | 'seeds'>('streak');
+
+  // Demo leaderboard data
+  const demoLeaderboard = {
+    streak: [
+      { name: "Aarav", class: "9", value: 42, rank: 1 },
+      { name: "Priya", class: "9", value: 38, rank: 2 },
+      { name: "Rohan", class: "10", value: 31, rank: 3 },
+      { name: "Ananya", class: "9", value: 27, rank: 4 },
+      { name: "Vikram", class: "8", value: 24, rank: 5 },
+      { name: "Sneha", class: "10", value: 19, rank: 6 },
+      { name: "Kabir", class: "9", value: 15, rank: 7 },
+      { name: "Meera", class: "8", value: 12, rank: 8 },
+    ],
+    seeds: [
+      { name: "Priya", class: "9", value: 680, rank: 1 },
+      { name: "Aarav", class: "9", value: 620, rank: 2 },
+      { name: "Ananya", class: "9", value: 540, rank: 3 },
+      { name: "Rohan", class: "10", value: 490, rank: 4 },
+      { name: "Sneha", class: "10", value: 410, rank: 5 },
+      { name: "Vikram", class: "8", value: 370, rank: 6 },
+      { name: "Meera", class: "8", value: 290, rank: 7 },
+      { name: "Kabir", class: "9", value: 240, rank: 8 },
+    ]
+  };
+
   // Load saved user from localStorage on start
   useEffect(() => {
     const saved = localStorage.getItem('lumoraUser');
@@ -43,6 +76,45 @@ function App() {
       setCurrentPage('dashboard');
     }
   }, []);
+
+  // ==================== POMODORO TIMER LOGIC ====================
+  useEffect(() => {
+    if (isRunning && timeLeft > 0) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      setIsRunning(false);
+      // Switch mode when timer ends
+      if (pomodoroMode === 'work') {
+        setPomodoroMode('break');
+        setTimeLeft(5 * 60);
+        alert("🎉 Work session complete! Time for a 5-minute break.");
+      } else {
+        setPomodoroMode('work');
+        setTimeLeft(25 * 60);
+        alert("🌱 Break over! Ready for another focus session?");
+      }
+    }
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isRunning, timeLeft, pomodoroMode]);
+
+  const startPomodoro = () => setIsRunning(true);
+  const pausePomodoro = () => setIsRunning(false);
+  const resetPomodoro = () => {
+    setIsRunning(false);
+    setPomodoroMode('work');
+    setTimeLeft(25 * 60);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // ==================== LOGIN ====================
   const handleLogin = async () => {
@@ -260,6 +332,8 @@ function App() {
     { id: 'dashboard' as const, label: 'Dashboard', icon: '🏠' },
     { id: 'reflection' as const, label: 'Reflection', icon: '📝' },
     { id: 'ai' as const, label: 'AI Mentor', icon: '🤖' },
+    { id: 'pomodoro' as const, label: 'Pomodoro', icon: '⏱️' },
+    { id: 'leaderboard' as const, label: 'Leaderboard', icon: '🏆' },
     { id: 'tree' as const, label: 'Growth Tree', icon: '🌳' },
     { id: 'career' as const, label: 'Career', icon: '🎯' },
   ];
@@ -403,6 +477,7 @@ function App() {
             justify-content: space-around;
             padding: 8px 0;
             z-index: 50;
+            overflow-x: auto;
           }
           .mobile-menu-overlay {
             display: block;
@@ -428,19 +503,18 @@ function App() {
       <div style={{ minHeight: '100vh', position: 'relative' }}>
         
         {/* Soft Forest Background */}
-<div style={{
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundImage: 'url(/forest-bg.png)',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  backgroundRepeat: 'no-repeat',
-  zIndex: 0,
-}} />
-
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: 'url(/forest-bg.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          zIndex: 0,
+        }} />
         
         {/* Soft cream overlay */}
         <div style={{
@@ -449,7 +523,7 @@ function App() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(248, 241, 233, 0.82)',
+          backgroundColor: 'rgba(248, 241, 233, 0.70)',
           zIndex: 1,
         }} />
 
@@ -519,7 +593,7 @@ function App() {
                   <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary }}>Lumora</h1>
                 </div>
 
-                <nav style={{ flex: 1, padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <nav style={{ flex: 1, padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto' }}>
                   {navItems.map(item => (
                     <button
                       key={item.id}
@@ -596,6 +670,7 @@ function App() {
               {/* Main Content */}
               <main className="main-content">
 
+                {/* DASHBOARD */}
                 {currentPage === 'dashboard' && (
                   <div>
                     <div style={{
@@ -663,6 +738,7 @@ function App() {
                   </div>
                 )}
 
+                {/* REFLECTION */}
                 {currentPage === 'reflection' && (
                   <div style={{ maxWidth: '640px', margin: '0 auto' }}>
                     <div style={{ ...cardStyle, padding: '36px' }}>
@@ -697,6 +773,7 @@ function App() {
                   </div>
                 )}
 
+                {/* AI MENTOR */}
                 {currentPage === 'ai' && (
                   <div style={{ maxWidth: '720px', margin: '0 auto' }}>
                     <div style={{ ...cardStyle, padding: '32px' }}>
@@ -756,6 +833,205 @@ function App() {
                   </div>
                 )}
 
+                {/* ==================== POMODORO TIMER ==================== */}
+                {currentPage === 'pomodoro' && (
+                  <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
+                    <div style={{ ...cardStyle, padding: '40px 32px' }}>
+                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
+                        ⏱️ Pomodoro Timer
+                      </h2>
+                      <p style={{ color: '#6b7280', marginBottom: '32px' }}>
+                        Classic 25 min focus + 5 min break
+                      </p>
+
+                      {/* Mode indicator */}
+                      <div style={{
+                        display: 'inline-block',
+                        padding: '8px 20px',
+                        borderRadius: '999px',
+                        background: pomodoroMode === 'work' ? '#fff7ed' : '#ecfdf5',
+                        color: pomodoroMode === 'work' ? colors.accent : '#059669',
+                        fontWeight: 600,
+                        marginBottom: '28px',
+                        fontSize: '15px'
+                      }}>
+                        {pomodoroMode === 'work' ? '🔥 Focus Time' : '🌿 Break Time'}
+                      </div>
+
+                      {/* Timer display */}
+                      <div style={{
+                        fontSize: '72px',
+                        fontWeight: 'bold',
+                        color: colors.primary,
+                        letterSpacing: '2px',
+                        marginBottom: '36px',
+                        fontVariantNumeric: 'tabular-nums'
+                      }}>
+                        {formatTime(timeLeft)}
+                      </div>
+
+                      {/* Controls */}
+                      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {!isRunning ? (
+                          <button
+                            onClick={startPomodoro}
+                            style={{
+                              padding: '14px 32px',
+                              background: colors.accent,
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '14px',
+                              fontSize: '16px',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Start
+                          </button>
+                        ) : (
+                          <button
+                            onClick={pausePomodoro}
+                            style={{
+                              padding: '14px 32px',
+                              background: '#f59e0b',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '14px',
+                              fontSize: '16px',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Pause
+                          </button>
+                        )}
+
+                        <button
+                          onClick={resetPomodoro}
+                          style={{
+                            padding: '14px 32px',
+                            background: 'white',
+                            color: colors.primary,
+                            border: `2px solid ${colors.primary}`,
+                            borderRadius: '14px',
+                            fontSize: '16px',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Reset
+                        </button>
+                      </div>
+
+                      <p style={{ marginTop: '28px', color: '#9ca3af', fontSize: '14px' }}>
+                        Stay focused. Small consistent sessions create long-term growth.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ==================== LEADERBOARD ==================== */}
+                {currentPage === 'leaderboard' && (
+                  <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+                    <div style={{ ...cardStyle, padding: '32px' }}>
+                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>
+                        🏆 Leaderboard
+                      </h2>
+                      <p style={{ color: '#6b7280', marginBottom: '24px' }}>
+                        Demo rankings • Real data coming soon
+                      </p>
+
+                      {/* Tabs */}
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '28px' }}>
+                        <button
+                          onClick={() => setLeaderboardTab('streak')}
+                          style={{
+                            flex: 1,
+                            padding: '12px',
+                            borderRadius: '12px',
+                            border: 'none',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            background: leaderboardTab === 'streak' ? colors.primary : '#fff7ed',
+                            color: leaderboardTab === 'streak' ? 'white' : colors.primary,
+                          }}
+                        >
+                          🔥 By Streak
+                        </button>
+                        <button
+                          onClick={() => setLeaderboardTab('seeds')}
+                          style={{
+                            flex: 1,
+                            padding: '12px',
+                            borderRadius: '12px',
+                            border: 'none',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            background: leaderboardTab === 'seeds' ? colors.primary : '#fff7ed',
+                            color: leaderboardTab === 'seeds' ? 'white' : colors.primary,
+                          }}
+                        >
+                          🌱 By Seeds
+                        </button>
+                      </div>
+
+                      {/* Rankings */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {demoLeaderboard[leaderboardTab].map((entry) => (
+                          <div
+                            key={entry.rank}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              padding: '14px 18px',
+                              borderRadius: '14px',
+                              background: entry.rank <= 3 ? '#fff7ed' : '#fafafa',
+                              border: entry.rank <= 3 ? '1px solid #fed7aa' : '1px solid #f3e8d8',
+                            }}
+                          >
+                            {/* Rank */}
+                            <div style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              background: entry.rank === 1 ? '#f59e0b' : entry.rank === 2 ? '#9ca3af' : entry.rank === 3 ? '#d97706' : colors.primary,
+                              color: 'white',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 'bold',
+                              fontSize: '15px',
+                              marginRight: '16px',
+                              flexShrink: 0
+                            }}>
+                              {entry.rank}
+                            </div>
+
+                            {/* Name & Class */}
+                            <div style={{ flex: 1 }}>
+                              <p style={{ fontWeight: 600, color: colors.text }}>{entry.name}</p>
+                              <p style={{ fontSize: '13px', color: '#9ca3af' }}>Class {entry.class}</p>
+                            </div>
+
+                            {/* Value */}
+                            <div style={{ fontWeight: 'bold', color: colors.primary, fontSize: '18px' }}>
+                              {entry.value}
+                              <span style={{ fontSize: '13px', fontWeight: 500, color: '#9ca3af', marginLeft: '4px' }}>
+                                {leaderboardTab === 'streak' ? 'days' : ''}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <p style={{ textAlign: 'center', marginTop: '24px', color: '#9ca3af', fontSize: '13px' }}>
+                        This is demo data. Real leaderboard will connect to Supabase soon.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* GROWTH TREE */}
                 {currentPage === 'tree' && (
                   <div style={{ maxWidth: '700px', margin: '0 auto', textAlign: 'center' }}>
                     <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
@@ -835,6 +1111,7 @@ function App() {
                   </div>
                 )}
 
+                {/* CAREER PLACEHOLDER */}
                 {currentPage === 'career' && (
                   <div style={{ textAlign: 'center', padding: '80px 20px' }}>
                     <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎯</div>
@@ -859,14 +1136,15 @@ function App() {
                       alignItems: 'center',
                       background: 'none',
                       border: 'none',
-                      padding: '6px 10px',
+                      padding: '6px 8px',
                       cursor: 'pointer',
                       color: currentPage === item.id ? colors.primary : '#9ca3af',
-                      fontSize: '11px',
-                      fontWeight: 500
+                      fontSize: '10px',
+                      fontWeight: 500,
+                      minWidth: '60px'
                     }}
                   >
-                    <span style={{ fontSize: '22px' }}>{item.icon}</span>
+                    <span style={{ fontSize: '20px' }}>{item.icon}</span>
                     <span style={{ marginTop: '2px' }}>{item.label.split(' ')[0]}</span>
                   </button>
                 ))}
