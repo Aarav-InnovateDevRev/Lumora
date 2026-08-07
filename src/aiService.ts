@@ -40,7 +40,7 @@ Latest Reflection: ${latestReflection ? JSON.stringify(latestReflection) : "No r
         model: "llama-3.1-8b-instant",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage || "Give me personalized daily growth advice." }
+          { role: "user", content: userMessage || "Give me personalized daily growth advice. (From the user's data)" }
         ],
         temperature: 0.7,
         max_tokens: 500
@@ -64,7 +64,7 @@ Latest Reflection: ${latestReflection ? JSON.stringify(latestReflection) : "No r
       body: JSON.stringify({
         model: "llama-3.1-8b-instant",
         messages: [
-          { role: "system", content: "Summarize the following advice into a short, inspiring insight (max 80 characters):" },
+          { role: "system", content: "Summarize the following advice into a short, (remember the user's data, you have to generate insights FOR the user) inspiring insight (max 80 characters):" },
           { role: "user", content: fullResponse }
         ],
         temperature: 0.7,

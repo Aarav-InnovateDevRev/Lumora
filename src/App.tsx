@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 function App() {
   // Page Navigation State
-  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard' | 'stats'>('login');
+  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard' | 'stats' | 'mirror'>('login');
   
   // Login State
   const [loginId, setLoginId] = useState("");
@@ -45,7 +45,7 @@ function App() {
   // ==================== LEADERBOARD STATE ====================
   const [leaderboardTab, setLeaderboardTab] = useState<'streak' | 'seeds'>('streak');
 
-  // Demo leaderboard data (only this remains demo)
+  // Demo leaderboard data
   const demoLeaderboard = {
     streak: [
       { name: "Aarav", class: "9", value: 42, rank: 1 },
@@ -84,7 +84,7 @@ function App() {
 
   // Fetch real reflections when entering Stats page
   useEffect(() => {
-    if (currentPage === 'stats' && user.id) {
+    if ((currentPage === 'stats' || currentPage === 'mirror') && user.id) {
       fetchStatsData();
     }
   }, [currentPage, user.id]);
@@ -364,6 +364,7 @@ function App() {
   // Navigation items
   const navItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: '🏠' },
+    { id: 'mirror' as const, label: 'Mirror', icon: '🪞' },
     { id: 'reflection' as const, label: 'Reflection', icon: '📝' },
     { id: 'ai' as const, label: 'AI Mentor', icon: '🤖' },
     { id: 'stats' as const, label: 'Stats', icon: '📊' },
@@ -417,7 +418,7 @@ function App() {
 
   // Prepare chart data
   const studyHoursData = reflectionsData.map(r => ({
-    date: r.date ? r.date.slice(5) : '', // MM-DD
+    date: r.date ? r.date.slice(5) : '',
     hours: Number(r.study_hours) || 0
   }));
 
@@ -439,6 +440,9 @@ function App() {
   }));
 
   const totalHours = reflectionsData.reduce((sum, r) => sum + (Number(r.study_hours) || 0), 0);
+
+  // Latest reflection for Mirror
+  const latestReflection = reflectionsData.length > 0 ? reflectionsData[reflectionsData.length - 1] : null;
 
   return (
     <>
@@ -776,6 +780,158 @@ function App() {
                   </div>
                 )}
 
+                {/* ==================== MIRROR OF YOU ==================== */}
+                {currentPage === 'mirror' && (
+                  <div>
+                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>
+                      🪞 Mirror of You
+                    </h1>
+                    <p style={{ color: '#6b7280', marginBottom: '32px' }}>
+                      See who you are becoming
+                    </p>
+
+                    {/* Current You */}
+                    <div style={{ ...cardStyle, marginBottom: '24px' }}>
+                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary, marginBottom: '20px' }}>
+                        Current You
+                      </h2>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                        <div style={{
+                          width: '72px', height: '72px', borderRadius: '50%',
+                          background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`,
+                          color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '32px', fontWeight: 'bold', flexShrink: 0
+                        }}>
+                          {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: '22px', fontWeight: 'bold', color: colors.text }}>{user.name || 'Student'}</h3>
+                          <p style={{ color: '#6b7280' }}>Class {user.class} · {user.studyFeeling}</p>
+                          <p style={{ color: colors.accent, fontWeight: 500, marginTop: '4px' }}>Goal: {user.goal || 'Not set yet'}</p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
+                        <div style={{ background: '#fff7ed', borderRadius: '14px', padding: '16px', textAlign: 'center' }}>
+                          <p style={{ fontSize: '13px', color: '#6b7280' }}>Streak</p>
+                          <p style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary }}>{user.streak}</p>
+                        </div>
+                        <div style={{ background: '#fff7ed', borderRadius: '14px', padding: '16px', textAlign: 'center' }}>
+                          <p style={{ fontSize: '13px', color: '#6b7280' }}>Seeds</p>
+                          <p style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary }}>{user.seeds}</p>
+                        </div>
+                        <div style={{ background: '#fff7ed', borderRadius: '14px', padding: '16px', textAlign: 'center' }}>
+                          <p style={{ fontSize: '13px', color: '#6b7280' }}>Level</p>
+                          <p style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary }}>{Math.floor(user.streak / 3) + 1}</p>
+                        </div>
+                        <div style={{ background: '#fff7ed', borderRadius: '14px', padding: '16px', textAlign: 'center' }}>
+                          <p style={{ fontSize: '13px', color: '#6b7280' }}>Reflections</p>
+                          <p style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary }}>{reflectionsData.length}</p>
+                        </div>
+                      </div>
+
+                      {latestReflection && (
+                        <div style={{ marginTop: '20px', padding: '16px', background: '#f8f1e9', borderRadius: '14px' }}>
+                          <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '6px' }}>Latest Reflection</p>
+                          <p style={{ color: colors.text }}>
+                            Mood: <strong>{latestReflection.mood}</strong> · Confidence: <strong>{latestReflection.confidence}</strong> · Hours: <strong>{latestReflection.study_hours}</strong>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Future You */}
+                    <div style={{
+                      ...cardStyle,
+                      marginBottom: '24px',
+                      background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`,
+                      color: 'white'
+                    }}>
+                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
+                        ✨ Future You
+                      </h2>
+                      <p style={{ fontSize: '18px', lineHeight: 1.6, marginBottom: '16px', opacity: 0.95 }}>
+                        You are becoming the person who achieves: <strong>{user.goal || 'your biggest goal'}</strong>
+                      </p>
+                      <p style={{ opacity: 0.85, fontSize: '15px' }}>
+                        With {user.streak} days of consistency and {user.seeds} seeds of growth, you are already building the habits of your future self.
+                      </p>
+                      <div style={{ marginTop: '20px', background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '14px 18px' }}>
+                        <p style={{ fontSize: '14px', opacity: 0.9 }}>
+                          Keep showing up. The person you want to become is created by the small actions you take today.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Growth Journey */}
+                    <div style={{ ...cardStyle, marginBottom: '24px' }}>
+                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary, marginBottom: '20px' }}>
+                        Growth Journey
+                      </h2>
+
+                      {reflectionsData.length === 0 ? (
+                        <p style={{ color: '#9ca3af' }}>Complete reflections to see your journey timeline here.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {reflectionsData.slice(-5).reverse().map((r, i) => (
+                            <div key={i} style={{
+                              display: 'flex',
+                              gap: '14px',
+                              padding: '14px',
+                              background: '#fafafa',
+                              borderRadius: '12px',
+                              border: '1px solid #f3e8d8'
+                            }}>
+                              <div style={{
+                                width: '10px', height: '10px', borderRadius: '50%',
+                                background: colors.accent, marginTop: '6px', flexShrink: 0
+                              }} />
+                              <div>
+                                <p style={{ fontWeight: 600, color: colors.text, fontSize: '14px' }}>{r.date}</p>
+                                <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '2px' }}>
+                                  {r.study_hours}h studied · Mood: {r.mood} · Confidence: {r.confidence}
+                                </p>
+                                {r.wins && <p style={{ color: colors.text, fontSize: '13px', marginTop: '4px' }}>Win: {r.wins}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Hidden Discoveries */}
+                    <div style={cardStyle}>
+                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary, marginBottom: '16px' }}>
+                        Hidden Discoveries
+                      </h2>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {hiddenDiscoveries.map((d, i) => (
+                          <div key={i} style={{
+                            background: '#fff7ed',
+                            borderRadius: '12px',
+                            padding: '14px 18px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span>✨</span>
+                              <span style={{ color: colors.text }}>{d}</span>
+                            </div>
+                            <button
+                              onClick={() => setHiddenDiscoveries(prev => prev.filter((_, idx) => idx !== i))}
+                              style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px' }}
+                            >
+                              🗑
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* REFLECTION */}
                 {currentPage === 'reflection' && (
                   <div style={{ maxWidth: '640px', margin: '0 auto' }}>
@@ -871,7 +1027,7 @@ function App() {
                   </div>
                 )}
 
-                {/* ==================== STATS PAGE ==================== */}
+                {/* STATS PAGE */}
                 {currentPage === 'stats' && (
                   <div>
                     <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
@@ -887,7 +1043,6 @@ function App() {
                       </div>
                     ) : (
                       <>
-                        {/* Summary Cards */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '36px' }}>
                           <div style={cardStyle}>
                             <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Total Reflections</p>
@@ -914,7 +1069,6 @@ function App() {
                           </div>
                         ) : (
                           <>
-                            {/* Study Hours Chart */}
                             <div style={{ ...cardStyle, marginBottom: '28px' }}>
                               <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.text, marginBottom: '20px' }}>
                                 Study Hours (Last 30 days)
@@ -930,7 +1084,6 @@ function App() {
                               </ResponsiveContainer>
                             </div>
 
-                            {/* Mood + Confidence Charts */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
                               <div style={cardStyle}>
                                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.text, marginBottom: '20px' }}>
