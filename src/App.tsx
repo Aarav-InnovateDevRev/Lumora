@@ -33,6 +33,10 @@ function App() {
   const [messageLimit, setMessageLimit] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Future You AI
+  const [futureVision, setFutureVision] = useState("");
+  const [isGeneratingFuture, setIsGeneratingFuture] = useState(false);
+
   // Mobile menu
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -111,6 +115,32 @@ function App() {
     }
     setStatsLoading(false);
   };
+
+  // ==================== GENERATE FUTURE YOU ====================
+const generateFutureVision = async () => {
+  if (!user.id) return;
+  
+  setIsGeneratingFuture(true);
+  setFutureVision("");
+
+  try {
+    const result = await getAIMentorResponse(
+      user, 
+      `Based on everything you know about me (my goal, streak, reflections, mood patterns and growth), write a short, inspiring and realistic "Future You" vision. 
+      
+Speak in second person ("You will..."). 
+Make it personal and hopeful but honest. 
+Maximum 90 words. 
+Focus on who I am becoming because of the habits I am building.`
+    );
+
+    setFutureVision(result.response);
+  } catch (error) {
+    setFutureVision("Something went wrong while creating your future glimpse. Please try again.");
+  }
+
+  setIsGeneratingFuture(false);
+};
 
   // ==================== POMODORO TIMER LOGIC ====================
   useEffect(() => {
@@ -842,38 +872,67 @@ function App() {
                     </div>
 
                     {/* Future You */}
-                    <div style={{
-                      ...cardStyle,
-                      marginBottom: '24px',
-                      background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`,
-                      color: 'white'
-                    }}>
-                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
-                        ✨ Future You
-                      </h2>
-                      <p style={{ fontSize: '18px', lineHeight: 1.6, marginBottom: '16px', opacity: 0.95 }}>
-  You are becoming the person who achieves: <strong>{user.goal || 'your biggest goal'}</strong>
-</p>
+<div style={{
+  ...cardStyle,
+  marginBottom: '24px',
+  background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`,
+  color: 'white'
+}}>
+  <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
+    ✨ Future You
+  </h2>
 
-{user.streak === 0 && user.seeds === 0 ? (
-  <p style={{ opacity: 0.9, fontSize: '15px' }}>
-    Your journey is just beginning. Every reflection and small action you take from today will start shaping the future you.
-  </p>
-) : user.streak < 7 ? (
-  <p style={{ opacity: 0.9, fontSize: '15px' }}>
-    You have taken the first steps with {user.streak} day{user.streak !== 1 ? 's' : ''} of consistency and {user.seeds} seeds. Keep going — the foundation is being built.
-  </p>
-) : (
-  <p style={{ opacity: 0.9, fontSize: '15px' }}>
-    With {user.streak} days of consistency and {user.seeds} seeds of growth, you are clearly building the habits of your future self.
-  </p>
-)}
-                      <div style={{ marginTop: '20px', background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '14px 18px' }}>
-                        <p style={{ fontSize: '14px', opacity: 0.9 }}>
-                          Keep showing up. The person you want to become is created by the small actions you take today.
-                        </p>
-                      </div>
-                    </div>
+  {futureVision ? (
+    // Show the AI generated vision
+    <div>
+      <p style={{ fontSize: '16px', lineHeight: 1.7, opacity: 0.95, whiteSpace: 'pre-wrap' }}>
+        {futureVision}
+      </p>
+      <button
+        onClick={generateFutureVision}
+        disabled={isGeneratingFuture}
+        style={{
+          marginTop: '20px',
+          padding: '10px 20px',
+          background: 'rgba(255,255,255,0.2)',
+          color: 'white',
+          border: '1px solid rgba(255,255,255,0.4)',
+          borderRadius: '12px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 500
+        }}
+      >
+        {isGeneratingFuture ? "Creating new glimpse..." : "Order another glimpse"}
+      </button>
+    </div>
+  ) : (
+    // Placeholder + Button
+    <div>
+      <p style={{ fontSize: '16px', lineHeight: 1.6, opacity: 0.9, marginBottom: '20px' }}>
+        Ready to see a glimpse of who you are becoming?
+      </p>
+      
+      <button
+        onClick={generateFutureVision}
+        disabled={isGeneratingFuture}
+        style={{
+          padding: '14px 28px',
+          background: 'white',
+          color: colors.primary,
+          border: 'none',
+          borderRadius: '14px',
+          fontSize: '16px',
+          fontWeight: 600,
+          cursor: isGeneratingFuture ? 'not-allowed' : 'pointer',
+          opacity: isGeneratingFuture ? 0.7 : 1
+        }}
+      >
+        {isGeneratingFuture ? "Creating your glimpse..." : "Order your Future glimpses?"}
+      </button>
+    </div>
+  )}
+</div>
 
                     {/* Growth Journey */}
                     <div style={{ ...cardStyle, marginBottom: '24px' }}>
