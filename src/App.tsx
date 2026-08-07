@@ -31,7 +31,7 @@ function App() {
 const [careerAnalysis, setCareerAnalysis] = useState("");
 const [isAnalyzingCareer, setIsAnalyzingCareer] = useState(false);
 const [suggestedGoal, setSuggestedGoal] = useState("");
-const [_dailyCareerStep, setDailyCareerStep] = useState("");
+const [dailyCareerStep, setDailyCareerStep] = useState("");
 
   // AI Chat State
   const [userMessage, setUserMessage] = useState("");
@@ -152,49 +152,73 @@ const analyzeCareerPath = async () => {
   setDailyCareerStep("");
 
   try {
-    const prompt = `
-You are Lumora's Career Guide for a Class ${user.class} student.
+    const prompt = `You are Lumora's Career Guide for a Class ${user.class} student.
 
-Analyze this student deeply using their real data:
-- Current Big Goal: ${user.goal}
-- Study Feeling: ${user.studyFeeling}
-- Streak: ${user.streak} days
-- Seeds: ${user.seeds}
-- Recent patterns and hidden discoveries
+Analyze this student using their real data (goal, reflections, patterns, streak, study style).
 
-Give a warm, clear, and helpful career analysis.
+Respond in this exact format:
 
-Structure your response exactly like this:
+Career Direction:
+(Write 2-3 clear sentences)
 
-**Career Direction**
-(Write 2-3 sentences about the most suitable path based on their patterns)
+Why this fits you:
+(Explain using their actual patterns)
 
-**Why this fits you**
-(Explain using their actual data)
+About your current goal:
+(Be respectful and supportive)
 
-**About your current goal**
-(Be respectful. If the current goal still fits well, support it. If a slight adjustment would serve them better, gently mention it.)
-
-**Today's Career Step**
-(Give one small, practical action they can do today)
-
-Keep the whole response under 180 words. Be encouraging and honest.
-`;
+Today's Career Step:
+(Give ONE small, practical action the student can do today)`;
 
     const result = await getAIMentorResponse(user, prompt);
     setCareerAnalysis(result.response);
 
-    // Simple detection if AI suggests a different goal
-    const lower = result.response.toLowerCase();
-    if (lower.includes("consider") || lower.includes("might suit") || lower.includes("another path") || lower.includes("adjust")) {
-      // We will let the user decide with buttons
+    // Simple way to extract the step
+    let stepText = "Review your goal and take one small action toward it today.";
+    
+    if (result.response.includes("Today's Career Step:")) {
+      const parts = result.response.split("Today's Career Step:");
+      if (parts[1]) {
+        stepText = parts[1].trim().split("\n")[0].trim();
+      }
     }
 
+    // Save the step to database
+    const today = new Date().toISOString().split('T')[0];
+
+    await supabase
+      .from('career_steps')
+      .insert([{
+        user_id: user.id,
+        step_text: stepText,
+        is_completed: false,
+        date: today
+      }]);
+
+    setDailyCareerStep(stepText);
+
   } catch (error) {
+    console.error(error);
     setCareerAnalysis("Sorry, I couldn't analyze your career path right now. Please try again.");
   }
 
   setIsAnalyzingCareer(false);
+};
+
+const loadLatestCareerStep = async () => {
+  if (!user.id) return;
+
+  const { data } = await supabase
+    .from('career_steps')
+    .select('step_text')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (data) {
+    setDailyCareerStep(data.step_text);
+  }
 };
 
 const updateUserGoal = async (newGoal: string) => {
@@ -242,6 +266,12 @@ Focus on who I am becoming because of the habits I am building.`
 
   setIsGeneratingFuture(false);
 };
+
+useEffect(() => {
+  if (currentPage === 'career' && user.id) {
+    loadLatestCareerStep();
+  }
+}, [currentPage, user.id]);
 
   // ==================== POMODORO TIMER LOGIC ====================
   useEffect(() => {
@@ -1659,6 +1689,18 @@ setCurrentPage('dashboard');
         </button>
       </div>
     )}
+
+    {/* Daily steps */}
+    {dailyCareerStep && (
+  <div style={{ ...cardStyle, marginTop: '24px', border: '2px solid #fed7aa' }}>
+    <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: colors.primary, marginBottom: '12px' }}>
+      📌 Today's Career Step
+    </h3>
+    <p style={{ fontSize: '15px', lineHeight: 1.6, color: colors.text }}>
+      {dailyCareerStep}
+    </p>
+  </div>
+)}
 
     {/* AI Analysis Result */}
     {careerAnalysis && (
