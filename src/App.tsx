@@ -336,7 +336,7 @@ setCurrentPage('dashboard');
   const newStreak = (user.streak || 0) + 1;
   const newSeeds = (user.seeds || 0) + 15;
   const newLevel = Math.floor(newStreak / 3) + 1;
-  const newGrowthScore = Math.min(100, newStreak * 5 + newSeeds / 10);
+  const newGrowthScore = Math.min(100, Math.round(newStreak * 5 + newSeeds / 10));
 
   // 3. Update growth_profile (more reliable method)
   const { data: existingProfile } = await supabase
