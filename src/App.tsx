@@ -852,11 +852,22 @@ function App() {
                         ✨ Future You
                       </h2>
                       <p style={{ fontSize: '18px', lineHeight: 1.6, marginBottom: '16px', opacity: 0.95 }}>
-                        You are becoming the person who achieves: <strong>{user.goal || 'your biggest goal'}</strong>
-                      </p>
-                      <p style={{ opacity: 0.85, fontSize: '15px' }}>
-                        With {user.streak} days of consistency and {user.seeds} seeds of growth, you are already building the habits of your future self.
-                      </p>
+  You are becoming the person who achieves: <strong>{user.goal || 'your biggest goal'}</strong>
+</p>
+
+{user.streak === 0 && user.seeds === 0 ? (
+  <p style={{ opacity: 0.9, fontSize: '15px' }}>
+    Your journey is just beginning. Every reflection and small action you take from today will start shaping the future you.
+  </p>
+) : user.streak < 7 ? (
+  <p style={{ opacity: 0.9, fontSize: '15px' }}>
+    You have taken the first steps with {user.streak} day{user.streak !== 1 ? 's' : ''} of consistency and {user.seeds} seeds. Keep going — the foundation is being built.
+  </p>
+) : (
+  <p style={{ opacity: 0.9, fontSize: '15px' }}>
+    With {user.streak} days of consistency and {user.seeds} seeds of growth, you are clearly building the habits of your future self.
+  </p>
+)}
                       <div style={{ marginTop: '20px', background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '14px 18px' }}>
                         <p style={{ fontSize: '14px', opacity: 0.9 }}>
                           Keep showing up. The person you want to become is created by the small actions you take today.
