@@ -27,6 +27,12 @@ function App() {
   // Hidden Discoveries from AI
   const [hiddenDiscoveries, setHiddenDiscoveries] = useState<string[]>(["You started your growth journey 🌱"]);
 
+  // Career Roadmap
+const [careerAnalysis, setCareerAnalysis] = useState("");
+const [isAnalyzingCareer, setIsAnalyzingCareer] = useState(false);
+const [suggestedGoal, setSuggestedGoal] = useState("");
+const [_dailyCareerStep, setDailyCareerStep] = useState("");
+
   // AI Chat State
   const [userMessage, setUserMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<{role: string, content: string}[]>([]);
@@ -135,6 +141,81 @@ useEffect(() => {
     }
     setStatsLoading(false);
   };
+
+  // ==================== CAREER ANALYSIS ====================
+const analyzeCareerPath = async () => {
+  if (!user.id) return;
+
+  setIsAnalyzingCareer(true);
+  setCareerAnalysis("");
+  setSuggestedGoal("");
+  setDailyCareerStep("");
+
+  try {
+    const prompt = `
+You are Lumora's Career Guide for a Class ${user.class} student.
+
+Analyze this student deeply using their real data:
+- Current Big Goal: ${user.goal}
+- Study Feeling: ${user.studyFeeling}
+- Streak: ${user.streak} days
+- Seeds: ${user.seeds}
+- Recent patterns and hidden discoveries
+
+Give a warm, clear, and helpful career analysis.
+
+Structure your response exactly like this:
+
+**Career Direction**
+(Write 2-3 sentences about the most suitable path based on their patterns)
+
+**Why this fits you**
+(Explain using their actual data)
+
+**About your current goal**
+(Be respectful. If the current goal still fits well, support it. If a slight adjustment would serve them better, gently mention it.)
+
+**Today's Career Step**
+(Give one small, practical action they can do today)
+
+Keep the whole response under 180 words. Be encouraging and honest.
+`;
+
+    const result = await getAIMentorResponse(user, prompt);
+    setCareerAnalysis(result.response);
+
+    // Simple detection if AI suggests a different goal
+    const lower = result.response.toLowerCase();
+    if (lower.includes("consider") || lower.includes("might suit") || lower.includes("another path") || lower.includes("adjust")) {
+      // We will let the user decide with buttons
+    }
+
+  } catch (error) {
+    setCareerAnalysis("Sorry, I couldn't analyze your career path right now. Please try again.");
+  }
+
+  setIsAnalyzingCareer(false);
+};
+
+const updateUserGoal = async (newGoal: string) => {
+  if (!newGoal.trim()) return;
+
+  const { error } = await supabase
+    .from('users')
+    .update({ goal: newGoal })
+    .eq('id', user.id);
+
+  if (error) {
+    alert("Could not update goal. Please try again.");
+    return;
+  }
+
+  const updatedUser = { ...user, goal: newGoal };
+  setUser(updatedUser);
+  localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+  setSuggestedGoal("");
+  alert("✅ Goal updated successfully!");
+};
 
   // ==================== GENERATE FUTURE YOU ====================
 const generateFutureVision = async () => {
@@ -1537,18 +1618,130 @@ setCurrentPage('dashboard');
 
                 {/* CAREER PLACEHOLDER */}
                 {currentPage === 'career' && (
-                  <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-                    <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎯</div>
-                    <h2 style={{ fontSize: '26px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
-                      Career Roadmap
-                    </h2>
-                    <p style={{ color: '#6b7280' }}>Coming very soon in Lumora v2...</p>
-                  </div>
-                )}
+  <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
+      🎯 Career Roadmap
+    </h1>
+    <p style={{ color: '#6b7280', marginBottom: '28px' }}>
+      Personalized guidance based on who you are becoming
+    </p>
+
+    {/* Current Goal Card */}
+    <div style={{ ...cardStyle, marginBottom: '24px' }}>
+      <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '6px' }}>Your Current Big Goal</p>
+      <p style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary }}>
+        {user.goal || "Not set yet"}
+      </p>
+    </div>
+
+    {/* Analysis Button */}
+    {!careerAnalysis && (
+      <div style={{ ...cardStyle, textAlign: 'center', padding: '40px 24px' }}>
+        <p style={{ fontSize: '16px', color: colors.text, marginBottom: '24px', lineHeight: 1.6 }}>
+          I will look at your reflections, patterns, strengths and current goal to suggest the most fitting career direction for you.
+        </p>
+        <button
+          onClick={analyzeCareerPath}
+          disabled={isAnalyzingCareer}
+          style={{
+            padding: '16px 32px',
+            background: colors.accent,
+            color: 'white',
+            border: 'none',
+            borderRadius: '14px',
+            fontSize: '16px',
+            fontWeight: 600,
+            cursor: isAnalyzingCareer ? 'not-allowed' : 'pointer',
+            opacity: isAnalyzingCareer ? 0.7 : 1
+          }}
+        >
+          {isAnalyzingCareer ? "Analyzing your path..." : "Analyze My Career Path"}
+        </button>
+      </div>
+    )}
+
+    {/* AI Analysis Result */}
+    {careerAnalysis && (
+      <div style={{ ...cardStyle, marginBottom: '24px' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.primary, marginBottom: '16px' }}>
+          Your Career Analysis
+        </h3>
+        <div style={{ 
+          whiteSpace: 'pre-wrap', 
+          lineHeight: 1.7, 
+          color: colors.text,
+          fontSize: '15px'
+        }}>
+          {careerAnalysis}
+        </div>
+
+        <button
+          onClick={analyzeCareerPath}
+          disabled={isAnalyzingCareer}
+          style={{
+            marginTop: '20px',
+            padding: '10px 20px',
+            background: '#fff7ed',
+            color: colors.primary,
+            border: `1px solid ${colors.border}`,
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: 500,
+            cursor: 'pointer'
+          }}
+        >
+          {isAnalyzingCareer ? "Re-analyzing..." : "Analyze Again"}
+        </button>
+      </div>
+    )}
+
+    {/* Gentle Goal Update Section */}
+    {suggestedGoal && (
+      <div style={{ ...cardStyle, marginBottom: '24px', border: '2px solid #fed7aa' }}>
+        <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: colors.primary, marginBottom: '12px' }}>
+          Would you like to update your goal?
+        </h3>
+        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
+          Suggested: <strong>{suggestedGoal}</strong>
+        </p>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => updateUserGoal(suggestedGoal)}
+            style={{
+              padding: '12px 20px',
+              background: colors.accent,
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            Yes, update my goal
+          </button>
+          <button
+            onClick={() => setSuggestedGoal("")}
+            style={{
+              padding: '12px 20px',
+              background: 'white',
+              color: colors.text,
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              fontWeight: 500,
+              cursor: 'pointer'
+            }}
+          >
+            Keep my current goal
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+)}
 
               </main>
 
-              {/* */}
+              
 
               {/* Mobile Bottom Navigation */}
               <nav className="mobile-bottom-nav">
