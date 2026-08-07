@@ -1548,6 +1548,8 @@ setCurrentPage('dashboard');
 
               </main>
 
+              {/* */}
+
               {/* Mobile Bottom Navigation */}
               <nav className="mobile-bottom-nav">
                 {navItems.map(item => (
