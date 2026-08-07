@@ -304,53 +304,97 @@ setCurrentPage('dashboard');
 
   // ==================== SAVE REFLECTION ====================
   const saveReflection = async () => {
-    const today = new Date().toISOString().split('T')[0];
-    if (localStorage.getItem('lastReflectionDate') === today) {
-      alert("⚠️ You already reflected today!");
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (localStorage.getItem('lastReflectionDate') === today) {
+    alert("⚠️ You already reflected today!");
+    return;
+  }
+
+  localStorage.setItem('lastReflectionDate', today);
+
+  // 1. Save the reflection
+  const { error: reflectionError } = await supabase
+    .from('daily_reflections')
+    .insert([{
+      user_id: user.id,
+      date: today,
+      study_hours: parseFloat(reflection.studyHours) || 0,
+      subjects: reflection.subjects.split(',').map(s => s.trim()),
+      mood: reflection.mood,
+      confidence: reflection.confidence,
+      wins: reflection.wins,
+      struggles: reflection.struggles
+    }]);
+
+  if (reflectionError) {
+    alert(`❌ Reflection Error: ${reflectionError.message}`);
+    return;
+  }
+
+  // 2. Calculate new values
+  const newStreak = (user.streak || 0) + 1;
+  const newSeeds = (user.seeds || 0) + 15;
+  const newLevel = Math.floor(newStreak / 3) + 1;
+  const newGrowthScore = Math.min(100, newStreak * 5 + newSeeds / 10);
+
+  // 3. Update growth_profile (more reliable method)
+  const { data: existingProfile } = await supabase
+    .from('growth_profile')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  if (existingProfile) {
+    // Profile exists → UPDATE it
+    const { error: updateError } = await supabase
+      .from('growth_profile')
+      .update({
+        total_seeds: newSeeds,
+        current_streak: newStreak,
+        longest_streak: Math.max(existingProfile.longest_streak || 0, newStreak),
+        level: newLevel,
+        growth_score: newGrowthScore
+      })
+      .eq('user_id', user.id);
+
+    if (updateError) {
+      alert(`❌ Growth Update Error: ${updateError.message}`);
       return;
     }
-
-    localStorage.setItem('lastReflectionDate', today);
-
-    const { error } = await supabase
-      .from('daily_reflections')
+  } else {
+    // Profile does not exist → INSERT it
+    const { error: insertError } = await supabase
+      .from('growth_profile')
       .insert([{
         user_id: user.id,
-        date: today,
-        study_hours: parseFloat(reflection.studyHours) || 0,
-        subjects: reflection.subjects.split(',').map(s => s.trim()),
-        mood: reflection.mood,
-        confidence: reflection.confidence,
-        wins: reflection.wins,
-        struggles: reflection.struggles
+        total_seeds: newSeeds,
+        current_streak: newStreak,
+        longest_streak: newStreak,
+        level: newLevel,
+        growth_score: newGrowthScore
       }]);
 
-    if (error) {
-      alert(`❌ ${error.message}`);
+    if (insertError) {
+      alert(`❌ Growth Insert Error: ${insertError.message}`);
       return;
     }
+  }
 
-    const newStreak = user.streak + 1;
-    const newSeeds = user.seeds + 15;
-
-    await supabase.from('growth_profile').upsert([{
-      user_id: user.id,
-      total_seeds: newSeeds,
-      current_streak: newStreak,
-      longest_streak: Math.max(user.streak, newStreak),
-      growth_score: Math.min(100, newStreak * 5 + newSeeds / 10)
-    }], { onConflict: 'user_id' });
-
-    setUser(prev => ({
-      ...prev,
-      streak: newStreak,
-      seeds: newSeeds
-    }));
-
-    setHiddenDiscoveries(prev => [...prev, `Reflection saved! Mood: ${reflection.mood}`]);
-    alert("✅ Reflection Saved! +1 Streak & +15 Seeds");
-    setCurrentPage('dashboard');
+  // 4. Update the UI and localStorage
+  const updatedUser = {
+    ...user,
+    streak: newStreak,
+    seeds: newSeeds
   };
+
+  setUser(updatedUser);
+  localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+
+  setHiddenDiscoveries(prev => [...prev, `Reflection saved! Mood: ${reflection.mood}`]);
+  alert("✅ Reflection Saved! +1 Streak & +15 Seeds");
+  setCurrentPage('dashboard');
+};
 
   // ==================== AI MENTOR ====================
   const getAIAdvice = async () => {
