@@ -77,14 +77,34 @@ function App() {
   const [reflectionsData, setReflectionsData] = useState<any[]>([]);
   const [statsLoading, setStatsLoading] = useState(false);
 
-  // Load saved user from localStorage on start
-  useEffect(() => {
+  // Load saved user + always fetch latest streak & seeds from Supabase
+useEffect(() => {
+  const loadUser = async () => {
     const saved = localStorage.getItem('lumoraUser');
-    if (saved) {
-      setUser(JSON.parse(saved));
-      setCurrentPage('dashboard');
-    }
-  }, []);
+    if (!saved) return;
+
+    const savedUser = JSON.parse(saved);
+
+    // Always get the latest growth data from Supabase
+    const { data: profile } = await supabase
+      .from('growth_profile')
+      .select('*')
+      .eq('user_id', savedUser.id)
+      .single();
+
+    const updatedUser = {
+      ...savedUser,
+      streak: profile ? profile.current_streak : 0,
+      seeds: profile ? profile.total_seeds : 0,
+    };
+
+    setUser(updatedUser);
+    localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+    setCurrentPage('dashboard');
+  };
+
+  loadUser();
+}, []);
 
   // Fetch real reflections when entering Stats page
   useEffect(() => {
@@ -224,19 +244,22 @@ Focus on who I am becoming because of the habits I am building.`
 
     setHiddenDiscoveries(patterns ? patterns.map(p => p.pattern) : ["You started your growth journey 🌱"]);
 
-    setUser({
-      id: data.id,
-      name: data.name,
-      class: data.class,
-      goal: data.goal,
-      preferredTone: data.preferred_tone || "Friendly",
-      studentType: data.student_type || "Mixed",
-      studyFeeling: data.study_feeling || "Focused",
-      password: data.password || "",
-      streak: profile ? profile.current_streak : 0,
-      seeds: profile ? profile.total_seeds : 0,
-    });
-    setCurrentPage('dashboard');
+    const finalUser = {
+  id: data.id,
+  name: data.name,
+  class: data.class,
+  goal: data.goal,
+  preferredTone: data.preferred_tone || "Friendly",
+  studentType: data.student_type || "Mixed",
+  studyFeeling: data.study_feeling || "Focused",
+  password: data.password || "",
+  streak: profile ? profile.current_streak : 0,
+  seeds: profile ? profile.total_seeds : 0,
+};
+
+setUser(finalUser);
+localStorage.setItem('lumoraUser', JSON.stringify(finalUser)); // ← important
+setCurrentPage('dashboard');
   };
 
   // ==================== ONBOARDING ====================
