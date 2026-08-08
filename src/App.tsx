@@ -4,63 +4,50 @@ import { getAIMentorResponse } from './aiService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 function App() {
-  // ==================== PAGE STATE ====================
   const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard' | 'stats' | 'mirror'>('login');
   
-  // Login State
   const [loginId, setLoginId] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  // User Profile State
   const [user, setUser] = useState({
     id: "", name: "", class: "", goal: "", preferredTone: "Friendly",
     studentType: "Mixed", studyFeeling: "Focused", password: "",
     streak: 0, seeds: 0,
   });
 
-  // Daily Reflection Form
   const [reflection, setReflection] = useState({
     studyHours: "", subjects: "", mood: "Good", confidence: "Medium", wins: "", struggles: "",
   });
 
-  // Hidden Discoveries
   const [hiddenDiscoveries, setHiddenDiscoveries] = useState<string[]>(["You started your growth journey 🌱"]);
 
-  // AI Chat State
   const [userMessage, setUserMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<{role: string, content: string}[]>([]);
   const [messageLimit, setMessageLimit] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mobile menu
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Pomodoro
   const [pomodoroMode, setPomodoroMode] = useState<'work' | 'break'>('work');
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Leaderboard
   const [leaderboardTab, setLeaderboardTab] = useState<'streak' | 'seeds'>('streak');
 
-  // Stats
   const [reflectionsData, setReflectionsData] = useState<any[]>([]);
   const [statsLoading, setStatsLoading] = useState(false);
 
-  // Future You
   const [futureVision, setFutureVision] = useState("");
   const [isGeneratingFuture, setIsGeneratingFuture] = useState(false);
 
-  // Career
   const [careerAnalysis, setCareerAnalysis] = useState("");
   const [isAnalyzingCareer, setIsAnalyzingCareer] = useState(false);
   const [suggestedGoal, setSuggestedGoal] = useState("");
   const [careerSteps, setCareerSteps] = useState<any[]>([]);
   const [isGeneratingStep, setIsGeneratingStep] = useState(false);
 
-  // Demo leaderboard
   const demoLeaderboard = {
     streak: [
       { name: "Aarav", class: "9", value: 42, rank: 1 },
@@ -117,7 +104,6 @@ function App() {
     loadUserProperly();
   }, []);
 
-  // ==================== LOAD DATA ON PAGE CHANGE ====================
   useEffect(() => {
     if ((currentPage === 'stats' || currentPage === 'mirror' || currentPage === 'dashboard') && user.id) {
       fetchStatsData();
@@ -154,7 +140,8 @@ function App() {
       if (pomodoroMode === 'work') {
         setPomodoroMode('break');
         setTimeLeft(5 * 60);
-        alert("Work session complete! Time for a 5-minute break.");
+        addSeeds(5, "Completed a Pomodoro session");
+        alert("Work session complete! +5 Seeds. Time for a 5-minute break.");
       } else {
         setPomodoroMode('work');
         setTimeLeft(25 * 60);
@@ -179,6 +166,39 @@ function App() {
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // ==================== SEEDS SYSTEM ====================
+const addSeeds = async (amount: number, reason: string = "") => {
+  if (!user.id || amount <= 0) return;
+
+  const newSeeds = (user.seeds || 0) + amount;
+
+  await supabase
+    .from('growth_profile')
+    .update({ total_seeds: newSeeds })
+    .eq('user_id', user.id);
+
+  const updatedUser = { ...user, seeds: newSeeds };
+  setUser(updatedUser);
+  localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+
+  if (reason) {
+    setHiddenDiscoveries(prev => [...prev, `+${amount} Seeds: ${reason}`]);
+  }
+};
+
+const checkStreakMilestones = async (newStreak: number) => {
+  if (newStreak === 7) {
+    await addSeeds(25, "7-day streak milestone!");
+    alert("🎉 7-day streak! +25 bonus Seeds");
+  } else if (newStreak === 14) {
+    await addSeeds(50, "14-day streak milestone!");
+    alert("🎉 14-day streak! +50 bonus Seeds");
+  } else if (newStreak === 30) {
+    await addSeeds(100, "30-day streak milestone!");
+    alert("🎉 30-day streak! +100 bonus Seeds");
+  }
+};
 
   // ==================== LOGIN ====================
   const handleLogin = async () => {
@@ -302,7 +322,7 @@ function App() {
       .single();
 
     if (existingProfile) {
-      const { error: updateError } = await supabase
+      await supabase
         .from('growth_profile')
         .update({
           total_seeds: newSeeds,
@@ -312,11 +332,6 @@ function App() {
           growth_score: newGrowthScore
         })
         .eq('user_id', user.id);
-
-      if (updateError) {
-        alert(`Growth Update Error: ${updateError.message}`);
-        return;
-      }
     } else {
       await supabase.from('growth_profile').insert([{
         user_id: user.id,
@@ -331,6 +346,8 @@ function App() {
     const updatedUser = { ...user, streak: newStreak, seeds: newSeeds };
     setUser(updatedUser);
     localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+
+    await checkStreakMilestones(newStreak);
 
     setHiddenDiscoveries(prev => [...prev, `Reflection saved! Mood: ${reflection.mood}`]);
     alert("Reflection Saved! +1 Streak & +15 Seeds");
@@ -387,6 +404,7 @@ function App() {
         `Based on everything you know about me (my goal, streak, reflections, mood patterns and growth), write a short, inspiring and realistic "Future You" vision. Speak in second person ("You will..."). Make it personal and hopeful but honest. Maximum 90 words.`
       );
       setFutureVision(result.response);
+      await addSeeds(10, "Generated Future You glimpse");
     } catch (error) {
       setFutureVision("Something went wrong while creating your future glimpse. Please try again.");
     }
@@ -492,6 +510,7 @@ Rules:
 
       if (!error) {
         await loadCareerTimeline();
+        await addSeeds(8, "Generated today's Career Task");
       } else {
         alert("Could not save the task. Please try again.");
       }
@@ -516,7 +535,6 @@ Rules:
     setIsMobileMenuOpen(false);
   };
 
-  // Navigation
   const navItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: '🏠' },
     { id: 'mirror' as const, label: 'Mirror', icon: '🪞' },
@@ -529,7 +547,6 @@ Rules:
     { id: 'career' as const, label: 'Career', icon: '🎯' },
   ];
 
-  // Styles
   const colors = {
     bg: '#f8f1e9',
     primary: '#9a3412',
@@ -556,7 +573,6 @@ Rules:
     boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid #f3e8d8',
   };
 
-  // Chart data
   const studyHoursData = reflectionsData.map(r => ({
     date: r.date ? r.date.slice(5) : '',
     hours: Number(r.study_hours) || 0
@@ -578,7 +594,7 @@ Rules:
   const totalHours = reflectionsData.reduce((sum, r) => sum + (Number(r.study_hours) || 0), 0);
   const latestReflection = reflectionsData.length > 0 ? reflectionsData[reflectionsData.length - 1] : null;
 
-  return (
+    return (
     <>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
