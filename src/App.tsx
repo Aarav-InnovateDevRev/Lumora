@@ -4,7 +4,7 @@ import { getAIMentorResponse } from './aiService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 function App() {
-  // Page Navigation State
+  // ==================== PAGE STATE ====================
   const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard' | 'stats' | 'mirror'>('login');
   
   // Login State
@@ -24,14 +24,8 @@ function App() {
     studyHours: "", subjects: "", mood: "Good", confidence: "Medium", wins: "", struggles: "",
   });
 
-  // Hidden Discoveries from AI
+  // Hidden Discoveries
   const [hiddenDiscoveries, setHiddenDiscoveries] = useState<string[]>(["You started your growth journey 🌱"]);
-
-  // Career Roadmap
-const [careerAnalysis, setCareerAnalysis] = useState("");
-const [isAnalyzingCareer, setIsAnalyzingCareer] = useState(false);
-const [suggestedGoal, setSuggestedGoal] = useState("");
-const [dailyCareerStep, setDailyCareerStep] = useState("");
 
   // AI Chat State
   const [userMessage, setUserMessage] = useState("");
@@ -39,23 +33,34 @@ const [dailyCareerStep, setDailyCareerStep] = useState("");
   const [messageLimit, setMessageLimit] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Future You AI
-  const [futureVision, setFutureVision] = useState("");
-  const [isGeneratingFuture, setIsGeneratingFuture] = useState(false);
-
   // Mobile menu
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // ==================== POMODORO STATE ====================
+  // Pomodoro
   const [pomodoroMode, setPomodoroMode] = useState<'work' | 'break'>('work');
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ==================== LEADERBOARD STATE ====================
+  // Leaderboard
   const [leaderboardTab, setLeaderboardTab] = useState<'streak' | 'seeds'>('streak');
 
-  // Demo leaderboard data
+  // Stats
+  const [reflectionsData, setReflectionsData] = useState<any[]>([]);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  // Future You
+  const [futureVision, setFutureVision] = useState("");
+  const [isGeneratingFuture, setIsGeneratingFuture] = useState(false);
+
+  // Career
+  const [careerAnalysis, setCareerAnalysis] = useState("");
+  const [isAnalyzingCareer, setIsAnalyzingCareer] = useState(false);
+  const [suggestedGoal, setSuggestedGoal] = useState("");
+  const [careerSteps, setCareerSteps] = useState<any[]>([]);
+  const [isGeneratingStep, setIsGeneratingStep] = useState(false);
+
+  // Demo leaderboard
   const demoLeaderboard = {
     streak: [
       { name: "Aarav", class: "9", value: 42, rank: 1 },
@@ -79,201 +84,66 @@ const [dailyCareerStep, setDailyCareerStep] = useState("");
     ]
   };
 
-  // ==================== STATS STATE ====================
-  const [reflectionsData, setReflectionsData] = useState<any[]>([]);
-  const [statsLoading, setStatsLoading] = useState(false);
+  // ==================== LOAD USER ====================
+  useEffect(() => {
+    const loadUserProperly = async () => {
+      const saved = localStorage.getItem('lumoraUser');
+      if (!saved) return;
 
-  // Load saved user + always fetch latest streak & seeds from Supabase
-useEffect(() => {
-  const loadUser = async () => {
-    const saved = localStorage.getItem('lumoraUser');
-    if (!saved) return;
+      const savedUser = JSON.parse(saved);
 
-    const savedUser = JSON.parse(saved);
+      try {
+        const { data: profile } = await supabase
+          .from('growth_profile')
+          .select('current_streak, total_seeds')
+          .eq('user_id', savedUser.id)
+          .single();
 
-    // Always get the latest growth data from Supabase
-    const { data: profile } = await supabase
-      .from('growth_profile')
-      .select('*')
-      .eq('user_id', savedUser.id)
-      .single();
+        const updatedUser = {
+          ...savedUser,
+          streak: profile?.current_streak ?? 0,
+          seeds: profile?.total_seeds ?? 0,
+        };
 
-    const updatedUser = {
-      ...savedUser,
-      streak: profile ? profile.current_streak : 0,
-      seeds: profile ? profile.total_seeds : 0,
+        setUser(updatedUser);
+        localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+        setCurrentPage('dashboard');
+      } catch (err) {
+        setUser(savedUser);
+        setCurrentPage('dashboard');
+      }
     };
 
-    setUser(updatedUser);
-    localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
-    setCurrentPage('dashboard');
-  };
+    loadUserProperly();
+  }, []);
 
-  loadUser();
-}, []);
-
-  // Fetch real reflections when entering Stats page
+  // ==================== LOAD DATA ON PAGE CHANGE ====================
   useEffect(() => {
-    if ((currentPage === 'stats' || currentPage === 'mirror') && user.id) {
+    if ((currentPage === 'stats' || currentPage === 'mirror' || currentPage === 'dashboard') && user.id) {
       fetchStatsData();
+    }
+    if (currentPage === 'career' && user.id) {
+      loadCareerTimeline();
     }
   }, [currentPage, user.id]);
 
   const fetchStatsData = async () => {
     setStatsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('daily_reflections')
         .select('*')
         .eq('user_id', user.id)
         .order('date', { ascending: true })
         .limit(30);
-
-      if (error) {
-        console.error(error);
-        setReflectionsData([]);
-      } else {
-        setReflectionsData(data || []);
-      }
+      setReflectionsData(data || []);
     } catch (err) {
-      console.error(err);
       setReflectionsData([]);
     }
     setStatsLoading(false);
   };
 
-  // ==================== CAREER ANALYSIS ====================
-const analyzeCareerPath = async () => {
-  if (!user.id) return;
-
-  setIsAnalyzingCareer(true);
-  setCareerAnalysis("");
-  setSuggestedGoal("");
-  setDailyCareerStep("");
-
-  try {
-    const prompt = `You are Lumora's Career Guide for a Class ${user.class} student.
-
-Analyze this student using their real data (goal, reflections, patterns, streak, study style).
-
-Respond in this exact format:
-
-Career Direction:
-(Write 2-3 clear sentences)
-
-Why this fits you:
-(Explain using their actual patterns)
-
-About your current goal:
-(Be respectful and supportive)
-
-Today's Career Step:
-(Give ONE small, practical action the student can do today)`;
-
-    const result = await getAIMentorResponse(user, prompt);
-    setCareerAnalysis(result.response);
-
-    // Simple way to extract the step
-    let stepText = "Review your goal and take one small action toward it today.";
-    
-    if (result.response.includes("Today's Career Step:")) {
-      const parts = result.response.split("Today's Career Step:");
-      if (parts[1]) {
-        stepText = parts[1].trim().split("\n")[0].trim();
-      }
-    }
-
-    // Save the step to database
-    const today = new Date().toISOString().split('T')[0];
-
-    await supabase
-      .from('career_steps')
-      .insert([{
-        user_id: user.id,
-        step_text: stepText,
-        is_completed: false,
-        date: today
-      }]);
-
-    setDailyCareerStep(stepText);
-
-  } catch (error) {
-    console.error(error);
-    setCareerAnalysis("Sorry, I couldn't analyze your career path right now. Please try again.");
-  }
-
-  setIsAnalyzingCareer(false);
-};
-
-const loadLatestCareerStep = async () => {
-  if (!user.id) return;
-
-  const { data } = await supabase
-    .from('career_steps')
-    .select('step_text')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-
-  if (data) {
-    setDailyCareerStep(data.step_text);
-  }
-};
-
-const updateUserGoal = async (newGoal: string) => {
-  if (!newGoal.trim()) return;
-
-  const { error } = await supabase
-    .from('users')
-    .update({ goal: newGoal })
-    .eq('id', user.id);
-
-  if (error) {
-    alert("Could not update goal. Please try again.");
-    return;
-  }
-
-  const updatedUser = { ...user, goal: newGoal };
-  setUser(updatedUser);
-  localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
-  setSuggestedGoal("");
-  alert("✅ Goal updated successfully!");
-};
-
-  // ==================== GENERATE FUTURE YOU ====================
-const generateFutureVision = async () => {
-  if (!user.id) return;
-  
-  setIsGeneratingFuture(true);
-  setFutureVision("");
-
-  try {
-    const result = await getAIMentorResponse(
-      user, 
-      `Based on everything you know about me (my goal, streak, reflections, mood patterns and growth), write a short, inspiring and realistic "Future You" vision. 
-      
-Speak in second person ("You will..."). 
-Make it personal and hopeful but honest. 
-Maximum 90 words. 
-Focus on who I am becoming because of the habits I am building.`
-    );
-
-    setFutureVision(result.response);
-  } catch (error) {
-    setFutureVision("Something went wrong while creating your future glimpse. Please try again.");
-  }
-
-  setIsGeneratingFuture(false);
-};
-
-useEffect(() => {
-  if (currentPage === 'career' && user.id) {
-    loadLatestCareerStep();
-  }
-}, [currentPage, user.id]);
-
-  // ==================== POMODORO TIMER LOGIC ====================
+  // ==================== POMODORO ====================
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       timerRef.current = setInterval(() => {
@@ -284,14 +154,13 @@ useEffect(() => {
       if (pomodoroMode === 'work') {
         setPomodoroMode('break');
         setTimeLeft(5 * 60);
-        alert("🎉 Work session complete! Time for a 5-minute break.");
+        alert("Work session complete! Time for a 5-minute break.");
       } else {
         setPomodoroMode('work');
         setTimeLeft(25 * 60);
-        alert("🌱 Break over! Ready for another focus session?");
+        alert("Break over! Ready for another focus session?");
       }
     }
-
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
@@ -314,35 +183,23 @@ useEffect(() => {
   // ==================== LOGIN ====================
   const handleLogin = async () => {
     setLoginError("");
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', loginId)
-      .single();
+    const { data, error } = await supabase.from('users').select('*').eq('id', loginId).single();
 
     if (error || !data) {
-      setLoginError("❌ Invalid User ID");
+      setLoginError("Invalid User ID");
       return;
     }
 
     if (data.password && data.password !== loginPassword) {
-      setLoginError("❌ Wrong Password");
+      setLoginError("Wrong Password");
       return;
     }
 
-    const { data: profile } = await supabase
-      .from('growth_profile')
-      .select('*')
-      .eq('user_id', loginId)
-      .single();
+    const { data: profile } = await supabase.from('growth_profile').select('*').eq('user_id', loginId).single();
 
     if (!profile) {
       await supabase.from('growth_profile').insert([{
-        user_id: loginId,
-        total_seeds: 0,
-        current_streak: 0,
-        longest_streak: 0,
-        growth_score: 0
+        user_id: loginId, total_seeds: 0, current_streak: 0, longest_streak: 0, growth_score: 0
       }]);
     }
 
@@ -356,78 +213,68 @@ useEffect(() => {
     setHiddenDiscoveries(patterns ? patterns.map(p => p.pattern) : ["You started your growth journey 🌱"]);
 
     const finalUser = {
-  id: data.id,
-  name: data.name,
-  class: data.class,
-  goal: data.goal,
-  preferredTone: data.preferred_tone || "Friendly",
-  studentType: data.student_type || "Mixed",
-  studyFeeling: data.study_feeling || "Focused",
-  password: data.password || "",
-  streak: profile ? profile.current_streak : 0,
-  seeds: profile ? profile.total_seeds : 0,
-};
+      id: data.id,
+      name: data.name,
+      class: data.class,
+      goal: data.goal,
+      preferredTone: data.preferred_tone || "Friendly",
+      studentType: data.student_type || "Mixed",
+      studyFeeling: data.study_feeling || "Focused",
+      password: data.password || "",
+      streak: profile ? profile.current_streak : 0,
+      seeds: profile ? profile.total_seeds : 0,
+    };
 
-setUser(finalUser);
-localStorage.setItem('lumoraUser', JSON.stringify(finalUser)); // ← important
-setCurrentPage('dashboard');
+    setUser(finalUser);
+    localStorage.setItem('lumoraUser', JSON.stringify(finalUser));
+    setCurrentPage('dashboard');
   };
 
   // ==================== ONBOARDING ====================
   const finishOnboarding = async () => {
     if (!user.id || !user.name || !user.class || !user.goal) {
-      alert("❌ Please fill all fields!");
+      alert("Please fill all fields!");
       return;
     }
 
-    const { error } = await supabase
-      .from('users')
-      .upsert([{
-        id: user.id,
-        name: user.name,
-        class: user.class,
-        goal: user.goal,
-        preferred_tone: user.preferredTone,
-        student_type: user.studentType,
-        study_feeling: user.studyFeeling,
-        password: user.password || "123456"
-      }], { onConflict: 'id' });
+    const { error } = await supabase.from('users').upsert([{
+      id: user.id,
+      name: user.name,
+      class: user.class,
+      goal: user.goal,
+      preferred_tone: user.preferredTone,
+      student_type: user.studentType,
+      study_feeling: user.studyFeeling,
+      password: user.password || "123456"
+    }], { onConflict: 'id' });
 
     if (error) {
-      alert(`❌ Error: ${error.message}`);
+      alert(`Error: ${error.message}`);
       return;
     }
 
     await supabase.from('growth_profile').insert([{
-      user_id: user.id,
-      total_seeds: 0,
-      current_streak: 0,
-      longest_streak: 0,
-      growth_score: 0
+      user_id: user.id, total_seeds: 0, current_streak: 0, longest_streak: 0, growth_score: 0
     }]);
 
     const newUser = { ...user, streak: 0, seeds: 0 };
     setUser(newUser);
     localStorage.setItem('lumoraUser', JSON.stringify(newUser));
-    alert("✅ Profile Created!");
+    alert("Profile Created!");
     setCurrentPage('dashboard');
   };
 
   // ==================== SAVE REFLECTION ====================
   const saveReflection = async () => {
-  const today = new Date().toISOString().split('T')[0];
-  
-  if (localStorage.getItem('lastReflectionDate') === today) {
-    alert("⚠️ You already reflected today!");
-    return;
-  }
+    const today = new Date().toISOString().split('T')[0];
+    if (localStorage.getItem('lastReflectionDate') === today) {
+      alert("You already reflected today!");
+      return;
+    }
 
-  localStorage.setItem('lastReflectionDate', today);
+    localStorage.setItem('lastReflectionDate', today);
 
-  // 1. Save the reflection
-  const { error: reflectionError } = await supabase
-    .from('daily_reflections')
-    .insert([{
+    const { error: reflectionError } = await supabase.from('daily_reflections').insert([{
       user_id: user.id,
       date: today,
       study_hours: parseFloat(reflection.studyHours) || 0,
@@ -438,46 +285,40 @@ setCurrentPage('dashboard');
       struggles: reflection.struggles
     }]);
 
-  if (reflectionError) {
-    alert(`❌ Reflection Error: ${reflectionError.message}`);
-    return;
-  }
-
-  // 2. Calculate new values
-  const newStreak = (user.streak || 0) + 1;
-  const newSeeds = (user.seeds || 0) + 15;
-  const newLevel = Math.floor(newStreak / 3) + 1;
-  const newGrowthScore = Math.min(100, Math.round(newStreak * 5 + newSeeds / 10));
-
-  // 3. Update growth_profile (more reliable method)
-  const { data: existingProfile } = await supabase
-    .from('growth_profile')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  if (existingProfile) {
-    // Profile exists → UPDATE it
-    const { error: updateError } = await supabase
-      .from('growth_profile')
-      .update({
-        total_seeds: newSeeds,
-        current_streak: newStreak,
-        longest_streak: Math.max(existingProfile.longest_streak || 0, newStreak),
-        level: newLevel,
-        growth_score: newGrowthScore
-      })
-      .eq('user_id', user.id);
-
-    if (updateError) {
-      alert(`❌ Growth Update Error: ${updateError.message}`);
+    if (reflectionError) {
+      alert(`Reflection Error: ${reflectionError.message}`);
       return;
     }
-  } else {
-    // Profile does not exist → INSERT it
-    const { error: insertError } = await supabase
+
+    const newStreak = (user.streak || 0) + 1;
+    const newSeeds = (user.seeds || 0) + 15;
+    const newLevel = Math.floor(newStreak / 3) + 1;
+    const newGrowthScore = Math.min(100, Math.round(newStreak * 5 + newSeeds / 10));
+
+    const { data: existingProfile } = await supabase
       .from('growth_profile')
-      .insert([{
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (existingProfile) {
+      const { error: updateError } = await supabase
+        .from('growth_profile')
+        .update({
+          total_seeds: newSeeds,
+          current_streak: newStreak,
+          longest_streak: Math.max(existingProfile.longest_streak || 0, newStreak),
+          level: newLevel,
+          growth_score: newGrowthScore
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        alert(`Growth Update Error: ${updateError.message}`);
+        return;
+      }
+    } else {
+      await supabase.from('growth_profile').insert([{
         user_id: user.id,
         total_seeds: newSeeds,
         current_streak: newStreak,
@@ -485,46 +326,32 @@ setCurrentPage('dashboard');
         level: newLevel,
         growth_score: newGrowthScore
       }]);
-
-    if (insertError) {
-      alert(`❌ Growth Insert Error: ${insertError.message}`);
-      return;
     }
-  }
 
-  // 4. Update the UI and localStorage
-  const updatedUser = {
-    ...user,
-    streak: newStreak,
-    seeds: newSeeds
+    const updatedUser = { ...user, streak: newStreak, seeds: newSeeds };
+    setUser(updatedUser);
+    localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+
+    setHiddenDiscoveries(prev => [...prev, `Reflection saved! Mood: ${reflection.mood}`]);
+    alert("Reflection Saved! +1 Streak & +15 Seeds");
+    setCurrentPage('dashboard');
   };
-
-  setUser(updatedUser);
-  localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
-
-  setHiddenDiscoveries(prev => [...prev, `Reflection saved! Mood: ${reflection.mood}`]);
-  alert("✅ Reflection Saved! +1 Streak & +15 Seeds");
-  setCurrentPage('dashboard');
-};
 
   // ==================== AI MENTOR ====================
   const getAIAdvice = async () => {
     if (messageLimit >= 10) {
-      alert("You have reached the daily limit of 10 messages. Come back tomorrow! 🌱");
+      alert("You have reached the daily limit of 10 messages. Come back tomorrow!");
       return;
     }
 
     setIsLoading(true);
-
     const result = await getAIMentorResponse(user, userMessage || "");
 
-    const newHistory = [
-      ...chatHistory,
+    setChatHistory(prev => [
+      ...prev,
       { role: "user", content: userMessage },
       { role: "assistant", content: result.response }
-    ];
-
-    setChatHistory(newHistory);
+    ]);
     setMessageLimit(prev => prev + 1);
     setUserMessage("");
 
@@ -548,19 +375,139 @@ setCurrentPage('dashboard');
     setIsLoading(false);
   };
 
+  // ==================== FUTURE YOU ====================
+  const generateFutureVision = async () => {
+    if (!user.id) return;
+    setIsGeneratingFuture(true);
+    setFutureVision("");
+
+    try {
+      const result = await getAIMentorResponse(
+        user,
+        `Based on everything you know about me (my goal, streak, reflections, mood patterns and growth), write a short, inspiring and realistic "Future You" vision. Speak in second person ("You will..."). Make it personal and hopeful but honest. Maximum 90 words.`
+      );
+      setFutureVision(result.response);
+    } catch (error) {
+      setFutureVision("Something went wrong while creating your future glimpse. Please try again.");
+    }
+    setIsGeneratingFuture(false);
+  };
+
+  // ==================== CAREER ====================
+  const analyzeCareerPath = async () => {
+    if (!user.id) return;
+    setIsAnalyzingCareer(true);
+    setCareerAnalysis("");
+    setSuggestedGoal("");
+
+    try {
+      const prompt = `You are Lumora's Career Guide for a Class ${user.class} student.
+
+Analyze this student using their real data (goal, reflections, patterns, streak, study style).
+
+Respond in this exact format:
+
+Career Direction:
+(Write 2-3 clear sentences)
+
+Why this fits you:
+(Explain using their actual patterns)
+
+About your current goal:
+(Be respectful. If the current goal is good, support it. If a different goal would fit better, gently suggest one.)
+
+Today's Career Step:
+(Give ONE small practical action for today)
+
+If you want to gently suggest a different goal, write it clearly on a new line like this:
+SUGGESTED_GOAL: New Goal Here`;
+
+      const result = await getAIMentorResponse(user, prompt);
+      setCareerAnalysis(result.response);
+
+      if (result.response.includes("SUGGESTED_GOAL:")) {
+        const parts = result.response.split("SUGGESTED_GOAL:");
+        if (parts[1]) {
+          const goal = parts[1].trim().split("\n")[0].trim();
+          if (goal && goal.length > 2) {
+            setSuggestedGoal(goal);
+          }
+        }
+      }
+    } catch (error) {
+      setCareerAnalysis("Sorry, I couldn't analyze your career path right now. Please try again.");
+    }
+    setIsAnalyzingCareer(false);
+  };
+
+  const updateUserGoal = async (newGoal: string) => {
+    if (!newGoal.trim()) return;
+
+    const { error } = await supabase.from('users').update({ goal: newGoal }).eq('id', user.id);
+    if (error) {
+      alert("Could not update goal. Please try again.");
+      return;
+    }
+
+    const updatedUser = { ...user, goal: newGoal };
+    setUser(updatedUser);
+    localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+    setSuggestedGoal("");
+    alert("Goal updated successfully!");
+  };
+
+  const loadCareerTimeline = async () => {
+    if (!user.id) return;
+    const { data } = await supabase
+      .from('career_steps')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    if (data) setCareerSteps(data);
+  };
+
+  const generateTodayCareerStep = async () => {
+    if (!user.id) return;
+    setIsGeneratingStep(true);
+
+    try {
+      const prompt = `You are Lumora's Career Coach.
+Based on this student's real data (goal: ${user.goal}, class: ${user.class}, streak, reflections and patterns), give ONE small, practical career task for TODAY.
+Rules:
+- Only return the task text
+- Make it specific and achievable in one day
+- Maximum 20 words
+- Do not write any introduction or extra text`;
+
+      const result = await getAIMentorResponse(user, prompt);
+      const stepText = result.response.trim();
+      const today = new Date().toISOString().split('T')[0];
+
+      const { error } = await supabase.from('career_steps').insert([{
+        user_id: user.id,
+        step_text: stepText,
+        is_completed: false,
+        date: today
+      }]);
+
+      if (!error) {
+        await loadCareerTimeline();
+      } else {
+        alert("Could not save the task. Please try again.");
+      }
+    } catch (error) {
+      alert("Something went wrong while generating the task.");
+    }
+    setIsGeneratingStep(false);
+  };
+
   // ==================== AR CAMERA ====================
   const startCamera = () => {
     const video = document.getElementById('cameraFeed') as HTMLVideoElement;
     if (video) {
-      navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user' }
-      })
-        .then(stream => {
-          video.srcObject = stream;
-        })
-        .catch(() => {
-          alert("Please allow camera permission to use AR filter.");
-        });
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+        .then(stream => { video.srcObject = stream; })
+        .catch(() => { alert("Please allow camera permission to use AR filter."); });
     }
   };
 
@@ -569,7 +516,7 @@ setCurrentPage('dashboard');
     setIsMobileMenuOpen(false);
   };
 
-  // Navigation items
+  // Navigation
   const navItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: '🏠' },
     { id: 'mirror' as const, label: 'Mirror', icon: '🪞' },
@@ -582,7 +529,7 @@ setCurrentPage('dashboard');
     { id: 'career' as const, label: 'Career', icon: '🎯' },
   ];
 
-  // ==================== STYLES ====================
+  // Styles
   const colors = {
     bg: '#f8f1e9',
     primary: '#9a3412',
@@ -593,49 +540,30 @@ setCurrentPage('dashboard');
   };
 
   const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '14px 16px',
-    marginBottom: '14px',
-    borderRadius: '12px',
-    border: '2px solid #fed7aa',
-    fontSize: '16px',
-    outline: 'none',
-    background: 'white',
+    width: '100%', padding: '14px 16px', marginBottom: '14px',
+    borderRadius: '12px', border: '2px solid #fed7aa', fontSize: '16px',
+    outline: 'none', background: 'white',
   };
 
   const buttonStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '16px',
-    backgroundColor: '#ea580c',
-    color: 'white',
-    border: 'none',
-    borderRadius: '14px',
-    fontSize: '17px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    marginTop: '8px',
+    width: '100%', padding: '16px', backgroundColor: '#ea580c', color: 'white',
+    border: 'none', borderRadius: '14px', fontSize: '17px', fontWeight: 600,
+    cursor: 'pointer', marginTop: '8px',
   };
 
   const cardStyle: React.CSSProperties = {
-    backgroundColor: 'white',
-    borderRadius: '18px',
-    padding: '24px',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
-    border: '1px solid #f3e8d8',
+    backgroundColor: 'white', borderRadius: '18px', padding: '24px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid #f3e8d8',
   };
 
-  // Prepare chart data
+  // Chart data
   const studyHoursData = reflectionsData.map(r => ({
     date: r.date ? r.date.slice(5) : '',
     hours: Number(r.study_hours) || 0
   }));
 
-  const moodMap: Record<string, number> = {
-    'Great': 5, 'Good': 4, 'Okay': 3, 'Tired': 2, 'Struggling': 1
-  };
-  const confidenceMap: Record<string, number> = {
-    'High': 3, 'Medium': 2, 'Low': 1
-  };
+  const moodMap: Record<string, number> = { 'Great': 5, 'Good': 4, 'Okay': 3, 'Tired': 2, 'Struggling': 1 };
+  const confidenceMap: Record<string, number> = { 'High': 3, 'Medium': 2, 'Low': 1 };
 
   const moodData = reflectionsData.map(r => ({
     date: r.date ? r.date.slice(5) : '',
@@ -648,8 +576,6 @@ setCurrentPage('dashboard');
   }));
 
   const totalHours = reflectionsData.reduce((sum, r) => sum + (Number(r.study_hours) || 0), 0);
-
-  // Latest reflection for Mirror
   const latestReflection = reflectionsData.length > 0 ? reflectionsData[reflectionsData.length - 1] : null;
 
   return (
@@ -657,133 +583,32 @@ setCurrentPage('dashboard');
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: system-ui, -apple-system, sans-serif; background: ${colors.bg}; }
-        
-        @keyframes grow {
-          from { transform: scale(0.85); }
-          to { transform: scale(1.15); }
-        }
-
-        .sidebar {
-          position: fixed;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 250px;
-          background: ${colors.white};
-          border-right: 1px solid #f3e8d8;
-          display: flex;
-          flex-direction: column;
-          z-index: 40;
-        }
-
-        .main-content {
-          margin-left: 250px;
-          min-height: 100vh;
-          padding: 32px 40px;
-        }
-
-        .nav-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          width: 100%;
-          padding: 14px 18px;
-          border: none;
-          border-radius: 12px;
-          background: transparent;
-          color: ${colors.text};
-          font-size: 15px;
-          font-weight: 500;
-          cursor: pointer;
-          text-align: left;
-          transition: all 0.15s;
-        }
-        .nav-item:hover {
-          background: #fff7ed;
-        }
-        .nav-item.active {
-          background: ${colors.primary};
-          color: white;
-        }
-
+        @keyframes grow { from { transform: scale(0.85); } to { transform: scale(1.15); } }
+        .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 250px; background: ${colors.white}; border-right: 1px solid #f3e8d8; display: flex; flex-direction: column; z-index: 40; }
+        .main-content { margin-left: 250px; min-height: 100vh; padding: 32px 40px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 18px; border: none; border-radius: 12px; background: transparent; color: ${colors.text}; font-size: 15px; font-weight: 500; cursor: pointer; text-align: left; transition: all 0.15s; }
+        .nav-item:hover { background: #fff7ed; }
+        .nav-item.active { background: ${colors.primary}; color: white; }
         .mobile-topbar { display: none; }
         .mobile-bottom-nav { display: none; }
         .mobile-menu-overlay { display: none; }
-
         @media (max-width: 768px) {
           .sidebar { display: none; }
-          .main-content {
-            margin-left: 0;
-            padding: 80px 16px 90px 16px;
-          }
-          .mobile-topbar {
-            display: flex;
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            height: 60px;
-            background: white;
-            border-bottom: 1px solid #f3e8d8;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-            z-index: 50;
-          }
-          .mobile-bottom-nav {
-            display: flex;
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: white;
-            border-top: 1px solid #f3e8d8;
-            justify-content: space-around;
-            padding: 8px 0;
-            z-index: 50;
-            overflow-x: auto;
-          }
-          .mobile-menu-overlay {
-            display: block;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 60;
-          }
-          .mobile-sidebar {
-            position: fixed;
-            left: 0; top: 0; bottom: 0;
-            width: 270px;
-            background: white;
-            z-index: 70;
-            padding: 20px;
-            box-shadow: 4px 0 20px rgba(0,0,0,0.1);
-          }
+          .main-content { margin-left: 0; padding: 80px 16px 90px 16px; }
+          .mobile-topbar { display: flex; position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; border-bottom: 1px solid #f3e8d8; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 50; }
+          .mobile-bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #f3e8d8; justify-content: space-around; padding: 8px 0; z-index: 50; overflow-x: auto; }
+          .mobile-menu-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 60; }
+          .mobile-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 270px; background: white; z-index: 70; padding: 20px; box-shadow: 4px 0 20px rgba(0,0,0,0.1); }
         }
       `}</style>
 
       <div style={{ minHeight: '100vh', position: 'relative' }}>
-        
-        {/* Soft Forest Background */}
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundImage: 'url(/forest-bg.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          zIndex: 0,
-        }} />
-        
-        {/* Soft cream overlay */}
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(248, 241, 233, 0.70)',
-          zIndex: 1,
-        }} />
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url(/forest-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', zIndex: 0 }} />
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(248, 241, 233, 0.70)', zIndex: 1 }} />
 
-        {/* All content */}
         <div style={{ position: 'relative', zIndex: 2 }}>
-
-          {/* LOGIN & ONBOARDING */}
           {(currentPage === 'login' || currentPage === 'onboarding') ? (
             <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-              
               {currentPage === 'login' && (
                 <div style={{ width: '100%', maxWidth: '420px', background: colors.white, borderRadius: '24px', padding: '48px 40px', boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }}>
                   <div style={{ textAlign: 'center', marginBottom: '32px' }}>
@@ -791,19 +616,12 @@ setCurrentPage('dashboard');
                     <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>Welcome to Lumora</h1>
                     <p style={{ color: '#6b7280', marginTop: '8px' }}>Your AI Growth Companion</p>
                   </div>
-
                   <input type="text" placeholder="User ID" value={loginId} onChange={e => setLoginId(e.target.value)} style={inputStyle} />
                   <input type="password" placeholder="Password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} style={inputStyle} />
-
                   {loginError && <p style={{ color: '#ef4444', textAlign: 'center', marginBottom: '16px' }}>{loginError}</p>}
-
                   <button onClick={handleLogin} style={buttonStyle}>Login</button>
-
                   <p style={{ textAlign: 'center', marginTop: '24px', color: '#6b7280' }}>
-                    New here?{' '}
-                    <button onClick={() => setCurrentPage('onboarding')} style={{ color: colors.accent, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 500 }}>
-                      Create Account
-                    </button>
+                    New here? <button onClick={() => setCurrentPage('onboarding')} style={{ color: colors.accent, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 500 }}>Create Account</button>
                   </p>
                 </div>
               )}
@@ -814,13 +632,11 @@ setCurrentPage('dashboard');
                     <img src="/logo.png" alt="Lumora" style={{ height: '48px', marginBottom: '12px' }} />
                     <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary }}>Create Your Profile</h1>
                   </div>
-
                   <input type="text" placeholder="Unique User ID" value={user.id} onChange={e => setUser(p => ({...p, id: e.target.value}))} style={inputStyle} />
                   <input type="text" placeholder="Full Name" value={user.name} onChange={e => setUser(p => ({...p, name: e.target.value}))} style={inputStyle} />
                   <input type="text" placeholder="Class" value={user.class} onChange={e => setUser(p => ({...p, class: e.target.value}))} style={inputStyle} />
                   <input type="text" placeholder="Your Big Goal" value={user.goal} onChange={e => setUser(p => ({...p, goal: e.target.value}))} style={inputStyle} />
                   <input type="password" placeholder="Set Password" value={user.password} onChange={e => setUser(p => ({...p, password: e.target.value}))} style={inputStyle} />
-
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: colors.text }}>What do you usually feel while studying?</label>
                   <select value={user.studyFeeling} onChange={e => setUser(p => ({...p, studyFeeling: e.target.value}))} style={inputStyle}>
                     <option value="Focused">Focused</option>
@@ -829,71 +645,46 @@ setCurrentPage('dashboard');
                     <option value="Bored">Bored</option>
                     <option value="Tired">Tired</option>
                   </select>
-
                   <button onClick={finishOnboarding} style={buttonStyle}>Create Profile & Start</button>
                 </div>
               )}
             </div>
           ) : (
             <>
-              {/* Desktop Sidebar */}
               <aside className="sidebar">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '24px 20px', borderBottom: '1px solid #f3e8d8' }}>
                   <img src="/logo.png" alt="Lumora" style={{ height: '40px' }} />
                   <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary }}>Lumora</h1>
                 </div>
-
                 <nav style={{ flex: 1, padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto' }}>
                   {navItems.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => goToPage(item.id)}
-                      className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
-                    >
+                    <button key={item.id} onClick={() => goToPage(item.id)} className={`nav-item ${currentPage === item.id ? 'active' : ''}`}>
                       <span style={{ fontSize: '20px' }}>{item.icon}</span>
                       <span>{item.label}</span>
                     </button>
                   ))}
                 </nav>
-
                 <div style={{ padding: '16px 20px', borderTop: '1px solid #f3e8d8' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      width: '40px', height: '40px', borderRadius: '50%',
-                      background: colors.accent, color: 'white',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 'bold', fontSize: '18px'
-                    }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: colors.accent, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px' }}>
                       {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                     </div>
                     <div style={{ overflow: 'hidden' }}>
-                      <p style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {user.name || 'Student'}
-                      </p>
+                      <p style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name || 'Student'}</p>
                       <p style={{ fontSize: '12px', color: '#9ca3af' }}>Class {user.class}</p>
                     </div>
                   </div>
                 </div>
               </aside>
 
-              {/* Mobile Top Bar */}
               <div className="mobile-topbar">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <img src="/logo.png" alt="Lumora" style={{ height: '32px' }} />
                   <span style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary }}>Lumora</span>
                 </div>
-                <button
-                  onClick={() => setIsMobileMenuOpen(true)}
-                  style={{
-                    background: '#fff7ed', border: 'none', borderRadius: '10px',
-                    padding: '8px 12px', fontSize: '20px', cursor: 'pointer', color: colors.primary
-                  }}
-                >
-                  ☰
-                </button>
+                <button onClick={() => setIsMobileMenuOpen(true)} style={{ background: '#fff7ed', border: 'none', borderRadius: '10px', padding: '8px 12px', fontSize: '20px', cursor: 'pointer', color: colors.primary }}>☰</button>
               </div>
 
-              {/* Mobile Menu Overlay */}
               {isMobileMenuOpen && (
                 <div className="mobile-menu-overlay" onClick={() => setIsMobileMenuOpen(false)}>
                   <div className="mobile-sidebar" onClick={e => e.stopPropagation()}>
@@ -903,11 +694,7 @@ setCurrentPage('dashboard');
                     </div>
                     <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {navItems.map(item => (
-                        <button
-                          key={item.id}
-                          onClick={() => goToPage(item.id)}
-                          className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
-                        >
+                        <button key={item.id} onClick={() => goToPage(item.id)} className={`nav-item ${currentPage === item.id ? 'active' : ''}`}>
                           <span style={{ fontSize: '20px' }}>{item.icon}</span>
                           <span>{item.label}</span>
                         </button>
@@ -917,37 +704,22 @@ setCurrentPage('dashboard');
                 </div>
               )}
 
-              {/* Main Content */}
               <main className="main-content">
-
                 {/* DASHBOARD */}
                 {currentPage === 'dashboard' && (
                   <div>
-                    <div style={{
-                      background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`,
-                      borderRadius: '20px',
-                      padding: '28px 32px',
-                      color: 'white',
-                      marginBottom: '32px',
-                      boxShadow: '0 8px 24px rgba(154,52,18,0.25)'
-                    }}>
-                      <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '6px' }}>
-                        Welcome back, {user.name}!
-                      </h1>
+                    <div style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`, borderRadius: '20px', padding: '28px 32px', color: 'white', marginBottom: '32px', boxShadow: '0 8px 24px rgba(154,52,18,0.25)' }}>
+                      <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '6px' }}>Welcome back, {user.name}!</h1>
                       <p style={{ opacity: 0.9 }}>Keep growing. Every day counts. 🌱</p>
                     </div>
-
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '40px' }}>
                       <div style={cardStyle}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', marginBottom: '12px' }}>
                           <span style={{ fontSize: '22px' }}>🔥</span>
                           <span style={{ fontWeight: 500 }}>Streak</span>
                         </div>
-                        <p style={{ fontSize: '42px', fontWeight: 'bold', color: colors.primary }}>
-                          {user.streak} <span style={{ fontSize: '18px', fontWeight: 500, color: '#9ca3af' }}>days</span>
-                        </p>
+                        <p style={{ fontSize: '42px', fontWeight: 'bold', color: colors.primary }}>{user.streak} <span style={{ fontSize: '18px', fontWeight: 500, color: '#9ca3af' }}>days</span></p>
                       </div>
-
                       <div style={cardStyle}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', marginBottom: '12px' }}>
                           <span style={{ fontSize: '22px' }}>🌱</span>
@@ -956,61 +728,31 @@ setCurrentPage('dashboard');
                         <p style={{ fontSize: '42px', fontWeight: 'bold', color: colors.primary }}>{user.seeds}</p>
                       </div>
                     </div>
-
-                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.text, marginBottom: '16px' }}>
-                      Hidden Discoveries
-                    </h2>
+                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.text, marginBottom: '16px' }}>Hidden Discoveries</h2>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {hiddenDiscoveries.map((d, i) => (
-                        <div key={i} style={{
-                          background: colors.white,
-                          borderRadius: '16px',
-                          padding: '16px 20px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                          border: '1px solid #f3e8d8'
-                        }}>
+                        <div key={i} style={{ background: colors.white, borderRadius: '16px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #f3e8d8' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <span style={{ fontSize: '18px' }}>✨</span>
                             <span style={{ color: colors.text }}>{d}</span>
                           </div>
-                          <button
-                            onClick={() => setHiddenDiscoveries(prev => prev.filter((_, idx) => idx !== i))}
-                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '18px' }}
-                          >
-                            🗑
-                          </button>
+                          <button onClick={() => setHiddenDiscoveries(prev => prev.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '18px' }}>🗑</button>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* ==================== MIRROR OF YOU ==================== */}
+                {/* MIRROR */}
                 {currentPage === 'mirror' && (
                   <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>
-                      🪞 Mirror of You
-                    </h1>
-                    <p style={{ color: '#6b7280', marginBottom: '32px' }}>
-                      See who you are becoming
-                    </p>
+                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>🪞 Mirror of You</h1>
+                    <p style={{ color: '#6b7280', marginBottom: '32px' }}>See who you are becoming</p>
 
-                    {/* Current You */}
                     <div style={{ ...cardStyle, marginBottom: '24px' }}>
-                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary, marginBottom: '20px' }}>
-                        Current You
-                      </h2>
-                      
+                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary, marginBottom: '20px' }}>Current You</h2>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px', flexWrap: 'wrap' }}>
-                        <div style={{
-                          width: '72px', height: '72px', borderRadius: '50%',
-                          background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`,
-                          color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '32px', fontWeight: 'bold', flexShrink: 0
-                        }}>
+                        <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: 'bold', flexShrink: 0 }}>
                           {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                         </div>
                         <div>
@@ -1019,7 +761,6 @@ setCurrentPage('dashboard');
                           <p style={{ color: colors.accent, fontWeight: 500, marginTop: '4px' }}>Goal: {user.goal || 'Not set yet'}</p>
                         </div>
                       </div>
-
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
                         <div style={{ background: '#fff7ed', borderRadius: '14px', padding: '16px', textAlign: 'center' }}>
                           <p style={{ fontSize: '13px', color: '#6b7280' }}>Streak</p>
@@ -1038,108 +779,45 @@ setCurrentPage('dashboard');
                           <p style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary }}>{reflectionsData.length}</p>
                         </div>
                       </div>
-
                       {latestReflection && (
                         <div style={{ marginTop: '20px', padding: '16px', background: '#f8f1e9', borderRadius: '14px' }}>
                           <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '6px' }}>Latest Reflection</p>
-                          <p style={{ color: colors.text }}>
-                            Mood: <strong>{latestReflection.mood}</strong> · Confidence: <strong>{latestReflection.confidence}</strong> · Hours: <strong>{latestReflection.study_hours}</strong>
-                          </p>
+                          <p style={{ color: colors.text }}>Mood: <strong>{latestReflection.mood}</strong> · Confidence: <strong>{latestReflection.confidence}</strong> · Hours: <strong>{latestReflection.study_hours}</strong></p>
                         </div>
                       )}
                     </div>
 
-                    {/* Future You */}
-<div style={{
-  ...cardStyle,
-  marginBottom: '24px',
-  background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`,
-  color: 'white'
-}}>
-  <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
-    ✨ Future You
-  </h2>
+                    <div style={{ ...cardStyle, marginBottom: '24px', background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`, color: 'white' }}>
+                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>✨ Future You</h2>
+                      {futureVision ? (
+                        <div>
+                          <p style={{ fontSize: '16px', lineHeight: 1.7, opacity: 0.95, whiteSpace: 'pre-wrap' }}>{futureVision}</p>
+                          <button onClick={generateFutureVision} disabled={isGeneratingFuture} style={{ marginTop: '20px', padding: '10px 20px', background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}>
+                            {isGeneratingFuture ? "Creating new glimpse..." : "Order another glimpse"}
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <p style={{ fontSize: '16px', lineHeight: 1.6, opacity: 0.9, marginBottom: '20px' }}>Ready to see a glimpse of who you are becoming?</p>
+                          <button onClick={generateFutureVision} disabled={isGeneratingFuture} style={{ padding: '14px 28px', background: 'white', color: colors.primary, border: 'none', borderRadius: '14px', fontSize: '16px', fontWeight: 600, cursor: isGeneratingFuture ? 'not-allowed' : 'pointer', opacity: isGeneratingFuture ? 0.7 : 1 }}>
+                            {isGeneratingFuture ? "Creating your glimpse..." : "Order your Future glimpses?"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-  {futureVision ? (
-    // Show the AI generated vision
-    <div>
-      <p style={{ fontSize: '16px', lineHeight: 1.7, opacity: 0.95, whiteSpace: 'pre-wrap' }}>
-        {futureVision}
-      </p>
-      <button
-        onClick={generateFutureVision}
-        disabled={isGeneratingFuture}
-        style={{
-          marginTop: '20px',
-          padding: '10px 20px',
-          background: 'rgba(255,255,255,0.2)',
-          color: 'white',
-          border: '1px solid rgba(255,255,255,0.4)',
-          borderRadius: '12px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: 500
-        }}
-      >
-        {isGeneratingFuture ? "Creating new glimpse..." : "Order another glimpse"}
-      </button>
-    </div>
-  ) : (
-    // Placeholder + Button
-    <div>
-      <p style={{ fontSize: '16px', lineHeight: 1.6, opacity: 0.9, marginBottom: '20px' }}>
-        Ready to see a glimpse of who you are becoming?
-      </p>
-      
-      <button
-        onClick={generateFutureVision}
-        disabled={isGeneratingFuture}
-        style={{
-          padding: '14px 28px',
-          background: 'white',
-          color: colors.primary,
-          border: 'none',
-          borderRadius: '14px',
-          fontSize: '16px',
-          fontWeight: 600,
-          cursor: isGeneratingFuture ? 'not-allowed' : 'pointer',
-          opacity: isGeneratingFuture ? 0.7 : 1
-        }}
-      >
-        {isGeneratingFuture ? "Creating your glimpse..." : "Order your Future glimpses?"}
-      </button>
-    </div>
-  )}
-</div>
-
-                    {/* Growth Journey */}
                     <div style={{ ...cardStyle, marginBottom: '24px' }}>
-                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary, marginBottom: '20px' }}>
-                        Growth Journey
-                      </h2>
-
+                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary, marginBottom: '20px' }}>Growth Journey</h2>
                       {reflectionsData.length === 0 ? (
                         <p style={{ color: '#9ca3af' }}>Complete reflections to see your journey timeline here.</p>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           {reflectionsData.slice(-5).reverse().map((r, i) => (
-                            <div key={i} style={{
-                              display: 'flex',
-                              gap: '14px',
-                              padding: '14px',
-                              background: '#fafafa',
-                              borderRadius: '12px',
-                              border: '1px solid #f3e8d8'
-                            }}>
-                              <div style={{
-                                width: '10px', height: '10px', borderRadius: '50%',
-                                background: colors.accent, marginTop: '6px', flexShrink: 0
-                              }} />
+                            <div key={i} style={{ display: 'flex', gap: '14px', padding: '14px', background: '#fafafa', borderRadius: '12px', border: '1px solid #f3e8d8' }}>
+                              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: colors.accent, marginTop: '6px', flexShrink: 0 }} />
                               <div>
                                 <p style={{ fontWeight: 600, color: colors.text, fontSize: '14px' }}>{r.date}</p>
-                                <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '2px' }}>
-                                  {r.study_hours}h studied · Mood: {r.mood} · Confidence: {r.confidence}
-                                </p>
+                                <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '2px' }}>{r.study_hours}h studied · Mood: {r.mood} · Confidence: {r.confidence}</p>
                                 {r.wins && <p style={{ color: colors.text, fontSize: '13px', marginTop: '4px' }}>Win: {r.wins}</p>}
                               </div>
                             </div>
@@ -1148,31 +826,16 @@ setCurrentPage('dashboard');
                       )}
                     </div>
 
-                    {/* Hidden Discoveries */}
                     <div style={cardStyle}>
-                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary, marginBottom: '16px' }}>
-                        Hidden Discoveries
-                      </h2>
+                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary, marginBottom: '16px' }}>Hidden Discoveries</h2>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {hiddenDiscoveries.map((d, i) => (
-                          <div key={i} style={{
-                            background: '#fff7ed',
-                            borderRadius: '12px',
-                            padding: '14px 18px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between'
-                          }}>
+                          <div key={i} style={{ background: '#fff7ed', borderRadius: '12px', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               <span>✨</span>
                               <span style={{ color: colors.text }}>{d}</span>
                             </div>
-                            <button
-                              onClick={() => setHiddenDiscoveries(prev => prev.filter((_, idx) => idx !== i))}
-                              style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px' }}
-                            >
-                              🗑
-                            </button>
+                            <button onClick={() => setHiddenDiscoveries(prev => prev.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px' }}>🗑</button>
                           </div>
                         ))}
                       </div>
@@ -1184,13 +847,9 @@ setCurrentPage('dashboard');
                 {currentPage === 'reflection' && (
                   <div style={{ maxWidth: '640px', margin: '0 auto' }}>
                     <div style={{ ...cardStyle, padding: '36px' }}>
-                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '24px' }}>
-                        Daily Reflection
-                      </h2>
-
+                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '24px' }}>Daily Reflection</h2>
                       <input type="text" placeholder="Hours studied today" value={reflection.studyHours} onChange={e => setReflection(p => ({...p, studyHours: e.target.value}))} style={inputStyle} />
                       <textarea placeholder="Subjects studied (comma separated)" value={reflection.subjects} onChange={e => setReflection(p => ({...p, subjects: e.target.value}))} style={{ ...inputStyle, height: '80px', resize: 'vertical' }} />
-
                       <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Mood Today</label>
                       <select value={reflection.mood} onChange={e => setReflection(p => ({...p, mood: e.target.value}))} style={inputStyle}>
                         <option value="Great">Great</option>
@@ -1199,17 +858,14 @@ setCurrentPage('dashboard');
                         <option value="Tired">Tired</option>
                         <option value="Struggling">Struggling</option>
                       </select>
-
                       <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Confidence Level</label>
                       <select value={reflection.confidence} onChange={e => setReflection(p => ({...p, confidence: e.target.value}))} style={inputStyle}>
                         <option value="High">High</option>
                         <option value="Medium">Medium</option>
                         <option value="Low">Low</option>
                       </select>
-
                       <textarea placeholder="Wins today" value={reflection.wins} onChange={e => setReflection(p => ({...p, wins: e.target.value}))} style={{ ...inputStyle, height: '90px', resize: 'vertical' }} />
                       <textarea placeholder="Struggles" value={reflection.struggles} onChange={e => setReflection(p => ({...p, struggles: e.target.value}))} style={{ ...inputStyle, height: '90px', resize: 'vertical' }} />
-
                       <button onClick={saveReflection} style={buttonStyle}>Save Reflection</button>
                     </div>
                   </div>
@@ -1219,108 +875,45 @@ setCurrentPage('dashboard');
                 {currentPage === 'ai' && (
                   <div style={{ maxWidth: '720px', margin: '0 auto' }}>
                     <div style={{ ...cardStyle, padding: '32px' }}>
-                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>
-                        🤖 Your AI Growth Mentor
-                      </h2>
-                      <p style={{ color: '#6b7280', marginBottom: '24px' }}>
-                        Personalized using your profile and latest reflections (10 messages/day)
-                      </p>
-
+                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>🤖 Your AI Growth Mentor</h2>
+                      <p style={{ color: '#6b7280', marginBottom: '24px' }}>Personalized using your profile and latest reflections (10 messages/day)</p>
                       <div style={{ maxHeight: '360px', overflowY: 'auto', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {chatHistory.length === 0 && (
-                          <div style={{ textAlign: 'center', color: '#9ca3af', padding: '40px 0' }}>
-                            Ask anything about your growth journey...
-                          </div>
-                        )}
+                        {chatHistory.length === 0 && <div style={{ textAlign: 'center', color: '#9ca3af', padding: '40px 0' }}>Ask anything about your growth journey...</div>}
                         {chatHistory.map((msg, i) => (
-                          <div
-                            key={i}
-                            style={{
-                              padding: '14px 18px',
-                              borderRadius: '14px',
-                              background: msg.role === 'user' ? '#fff7ed' : '#f8f1e9',
-                              marginLeft: msg.role === 'user' ? '40px' : '0',
-                              marginRight: msg.role === 'assistant' ? '40px' : '0',
-                            }}
-                          >
-                            <strong style={{ fontSize: '13px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
-                              {msg.role === 'user' ? 'You' : 'AI Mentor'}
-                            </strong>
+                          <div key={i} style={{ padding: '14px 18px', borderRadius: '14px', background: msg.role === 'user' ? '#fff7ed' : '#f8f1e9', marginLeft: msg.role === 'user' ? '40px' : '0', marginRight: msg.role === 'assistant' ? '40px' : '0' }}>
+                            <strong style={{ fontSize: '13px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>{msg.role === 'user' ? 'You' : 'AI Mentor'}</strong>
                             <p style={{ whiteSpace: 'pre-wrap', color: colors.text }}>{msg.content}</p>
                           </div>
                         ))}
                       </div>
-
-                      <textarea
-                        placeholder="Ask anything..."
-                        value={userMessage}
-                        onChange={e => setUserMessage(e.target.value)}
-                        style={{ ...inputStyle, height: '100px', resize: 'vertical' }}
-                      />
-
-                      <button
-                        onClick={getAIAdvice}
-                        disabled={isLoading}
-                        style={{ ...buttonStyle, opacity: isLoading ? 0.7 : 1 }}
-                      >
-                        {isLoading ? "AI is thinking..." : "Get Personalized Advice"}
-                      </button>
-
-                      {messageLimit >= 10 && (
-                        <p style={{ color: '#ef4444', textAlign: 'center', marginTop: '12px' }}>
-                          Daily limit reached (10 messages). Come back tomorrow!
-                        </p>
-                      )}
+                      <textarea placeholder="Ask anything..." value={userMessage} onChange={e => setUserMessage(e.target.value)} style={{ ...inputStyle, height: '100px', resize: 'vertical' }} />
+                      <button onClick={getAIAdvice} disabled={isLoading} style={{ ...buttonStyle, opacity: isLoading ? 0.7 : 1 }}>{isLoading ? "AI is thinking..." : "Get Personalized Advice"}</button>
+                      {messageLimit >= 10 && <p style={{ color: '#ef4444', textAlign: 'center', marginTop: '12px' }}>Daily limit reached (10 messages). Come back tomorrow!</p>}
                     </div>
                   </div>
                 )}
 
-                {/* STATS PAGE */}
+                {/* STATS */}
                 {currentPage === 'stats' && (
                   <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
-                      📊 Your Progress Stats
-                    </h1>
-                    <p style={{ color: '#6b7280', marginBottom: '28px' }}>
-                      Real data from your last 30 reflections
-                    </p>
-
+                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>📊 Your Progress Stats</h1>
+                    <p style={{ color: '#6b7280', marginBottom: '28px' }}>Real data from your last 30 reflections</p>
                     {statsLoading ? (
-                      <div style={{ textAlign: 'center', padding: '60px', color: '#9ca3af' }}>
-                        Loading your stats...
-                      </div>
+                      <div style={{ textAlign: 'center', padding: '60px', color: '#9ca3af' }}>Loading your stats...</div>
                     ) : (
                       <>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '36px' }}>
-                          <div style={cardStyle}>
-                            <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Total Reflections</p>
-                            <p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{reflectionsData.length}</p>
-                          </div>
-                          <div style={cardStyle}>
-                            <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Total Study Hours</p>
-                            <p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{totalHours.toFixed(1)}</p>
-                          </div>
-                          <div style={cardStyle}>
-                            <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Current Streak</p>
-                            <p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{user.streak}</p>
-                          </div>
-                          <div style={cardStyle}>
-                            <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Total Seeds</p>
-                            <p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{user.seeds}</p>
-                          </div>
+                          <div style={cardStyle}><p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Total Reflections</p><p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{reflectionsData.length}</p></div>
+                          <div style={cardStyle}><p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Total Study Hours</p><p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{totalHours.toFixed(1)}</p></div>
+                          <div style={cardStyle}><p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Current Streak</p><p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{user.streak}</p></div>
+                          <div style={cardStyle}><p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Total Seeds</p><p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{user.seeds}</p></div>
                         </div>
-
                         {reflectionsData.length === 0 ? (
-                          <div style={{ ...cardStyle, textAlign: 'center', padding: '50px' }}>
-                            <p style={{ fontSize: '18px', color: '#6b7280' }}>No reflections yet.</p>
-                            <p style={{ color: '#9ca3af', marginTop: '8px' }}>Complete a few daily reflections to see your graphs here.</p>
-                          </div>
+                          <div style={{ ...cardStyle, textAlign: 'center', padding: '50px' }}><p style={{ fontSize: '18px', color: '#6b7280' }}>No reflections yet.</p><p style={{ color: '#9ca3af', marginTop: '8px' }}>Complete a few daily reflections to see your graphs here.</p></div>
                         ) : (
                           <>
                             <div style={{ ...cardStyle, marginBottom: '28px' }}>
-                              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.text, marginBottom: '20px' }}>
-                                Study Hours (Last 30 days)
-                              </h3>
+                              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.text, marginBottom: '20px' }}>Study Hours (Last 30 days)</h3>
                               <ResponsiveContainer width="100%" height={260}>
                                 <LineChart data={studyHoursData}>
                                   <CartesianGrid strokeDasharray="3 3" stroke="#f3e8d8" />
@@ -1331,12 +924,9 @@ setCurrentPage('dashboard');
                                 </LineChart>
                               </ResponsiveContainer>
                             </div>
-
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
                               <div style={cardStyle}>
-                                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.text, marginBottom: '20px' }}>
-                                  Mood Trend
-                                </h3>
+                                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.text, marginBottom: '20px' }}>Mood Trend</h3>
                                 <ResponsiveContainer width="100%" height={220}>
                                   <BarChart data={moodData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f3e8d8" />
@@ -1346,15 +936,10 @@ setCurrentPage('dashboard');
                                     <Bar dataKey="mood" fill="#9a3412" radius={[6, 6, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
-                                <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
-                                  5 = Great · 4 = Good · 3 = Okay · 2 = Tired · 1 = Struggling
-                                </p>
+                                <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>5 = Great · 4 = Good · 3 = Okay · 2 = Tired · 1 = Struggling</p>
                               </div>
-
                               <div style={cardStyle}>
-                                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.text, marginBottom: '20px' }}>
-                                  Confidence Trend
-                                </h3>
+                                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.text, marginBottom: '20px' }}>Confidence Trend</h3>
                                 <ResponsiveContainer width="100%" height={220}>
                                   <LineChart data={confidenceData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f3e8d8" />
@@ -1364,9 +949,7 @@ setCurrentPage('dashboard');
                                     <Line type="monotone" dataKey="confidence" stroke="#ea580c" strokeWidth={3} dot={{ r: 4 }} />
                                   </LineChart>
                                 </ResponsiveContainer>
-                                <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
-                                  3 = High · 2 = Medium · 1 = Low
-                                </p>
+                                <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>3 = High · 2 = Medium · 1 = Low</p>
                               </div>
                             </div>
                           </>
@@ -1380,92 +963,21 @@ setCurrentPage('dashboard');
                 {currentPage === 'pomodoro' && (
                   <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
                     <div style={{ ...cardStyle, padding: '40px 32px' }}>
-                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
-                        ⏱️ Pomodoro Timer
-                      </h2>
-                      <p style={{ color: '#6b7280', marginBottom: '32px' }}>
-                        Classic 25 min focus + 5 min break
-                      </p>
-
-                      <div style={{
-                        display: 'inline-block',
-                        padding: '8px 20px',
-                        borderRadius: '999px',
-                        background: pomodoroMode === 'work' ? '#fff7ed' : '#ecfdf5',
-                        color: pomodoroMode === 'work' ? colors.accent : '#059669',
-                        fontWeight: 600,
-                        marginBottom: '28px',
-                        fontSize: '15px'
-                      }}>
+                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>⏱️ Pomodoro Timer</h2>
+                      <p style={{ color: '#6b7280', marginBottom: '32px' }}>Classic 25 min focus + 5 min break</p>
+                      <div style={{ display: 'inline-block', padding: '8px 20px', borderRadius: '999px', background: pomodoroMode === 'work' ? '#fff7ed' : '#ecfdf5', color: pomodoroMode === 'work' ? colors.accent : '#059669', fontWeight: 600, marginBottom: '28px', fontSize: '15px' }}>
                         {pomodoroMode === 'work' ? '🔥 Focus Time' : '🌿 Break Time'}
                       </div>
-
-                      <div style={{
-                        fontSize: '72px',
-                        fontWeight: 'bold',
-                        color: colors.primary,
-                        letterSpacing: '2px',
-                        marginBottom: '36px',
-                        fontVariantNumeric: 'tabular-nums'
-                      }}>
-                        {formatTime(timeLeft)}
-                      </div>
-
+                      <div style={{ fontSize: '72px', fontWeight: 'bold', color: colors.primary, letterSpacing: '2px', marginBottom: '36px', fontVariantNumeric: 'tabular-nums' }}>{formatTime(timeLeft)}</div>
                       <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                         {!isRunning ? (
-                          <button
-                            onClick={startPomodoro}
-                            style={{
-                              padding: '14px 32px',
-                              background: colors.accent,
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '14px',
-                              fontSize: '16px',
-                              fontWeight: 600,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Start
-                          </button>
+                          <button onClick={startPomodoro} style={{ padding: '14px 32px', background: colors.accent, color: 'white', border: 'none', borderRadius: '14px', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>Start</button>
                         ) : (
-                          <button
-                            onClick={pausePomodoro}
-                            style={{
-                              padding: '14px 32px',
-                              background: '#f59e0b',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '14px',
-                              fontSize: '16px',
-                              fontWeight: 600,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Pause
-                          </button>
+                          <button onClick={pausePomodoro} style={{ padding: '14px 32px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '14px', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>Pause</button>
                         )}
-
-                        <button
-                          onClick={resetPomodoro}
-                          style={{
-                            padding: '14px 32px',
-                            background: 'white',
-                            color: colors.primary,
-                            border: `2px solid ${colors.primary}`,
-                            borderRadius: '14px',
-                            fontSize: '16px',
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Reset
-                        </button>
+                        <button onClick={resetPomodoro} style={{ padding: '14px 32px', background: 'white', color: colors.primary, border: `2px solid ${colors.primary}`, borderRadius: '14px', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>Reset</button>
                       </div>
-
-                      <p style={{ marginTop: '28px', color: '#9ca3af', fontSize: '14px' }}>
-                        Stay focused. Small consistent sessions create long-term growth.
-                      </p>
+                      <p style={{ marginTop: '28px', color: '#9ca3af', fontSize: '14px' }}>Stay focused. Small consistent sessions create long-term growth.</p>
                     </div>
                   </div>
                 )}
@@ -1474,94 +986,25 @@ setCurrentPage('dashboard');
                 {currentPage === 'leaderboard' && (
                   <div style={{ maxWidth: '640px', margin: '0 auto' }}>
                     <div style={{ ...cardStyle, padding: '32px' }}>
-                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>
-                        🏆 Leaderboard
-                      </h2>
-                      <p style={{ color: '#6b7280', marginBottom: '24px' }}>
-                        Demo rankings • Real data coming soon
-                      </p>
-
+                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>🏆 Leaderboard</h2>
+                      <p style={{ color: '#6b7280', marginBottom: '24px' }}>Demo rankings • Real data coming soon</p>
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '28px' }}>
-                        <button
-                          onClick={() => setLeaderboardTab('streak')}
-                          style={{
-                            flex: 1,
-                            padding: '12px',
-                            borderRadius: '12px',
-                            border: 'none',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            background: leaderboardTab === 'streak' ? colors.primary : '#fff7ed',
-                            color: leaderboardTab === 'streak' ? 'white' : colors.primary,
-                          }}
-                        >
-                          🔥 By Streak
-                        </button>
-                        <button
-                          onClick={() => setLeaderboardTab('seeds')}
-                          style={{
-                            flex: 1,
-                            padding: '12px',
-                            borderRadius: '12px',
-                            border: 'none',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            background: leaderboardTab === 'seeds' ? colors.primary : '#fff7ed',
-                            color: leaderboardTab === 'seeds' ? 'white' : colors.primary,
-                          }}
-                        >
-                          🌱 By Seeds
-                        </button>
+                        <button onClick={() => setLeaderboardTab('streak')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', fontWeight: 600, cursor: 'pointer', background: leaderboardTab === 'streak' ? colors.primary : '#fff7ed', color: leaderboardTab === 'streak' ? 'white' : colors.primary }}>🔥 By Streak</button>
+                        <button onClick={() => setLeaderboardTab('seeds')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', fontWeight: 600, cursor: 'pointer', background: leaderboardTab === 'seeds' ? colors.primary : '#fff7ed', color: leaderboardTab === 'seeds' ? 'white' : colors.primary }}>🌱 By Seeds</button>
                       </div>
-
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {demoLeaderboard[leaderboardTab].map((entry) => (
-                          <div
-                            key={entry.rank}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              padding: '14px 18px',
-                              borderRadius: '14px',
-                              background: entry.rank <= 3 ? '#fff7ed' : '#fafafa',
-                              border: entry.rank <= 3 ? '1px solid #fed7aa' : '1px solid #f3e8d8',
-                            }}
-                          >
-                            <div style={{
-                              width: '36px',
-                              height: '36px',
-                              borderRadius: '50%',
-                              background: entry.rank === 1 ? '#f59e0b' : entry.rank === 2 ? '#9ca3af' : entry.rank === 3 ? '#d97706' : colors.primary,
-                              color: 'white',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontWeight: 'bold',
-                              fontSize: '15px',
-                              marginRight: '16px',
-                              flexShrink: 0
-                            }}>
-                              {entry.rank}
-                            </div>
-
+                          <div key={entry.rank} style={{ display: 'flex', alignItems: 'center', padding: '14px 18px', borderRadius: '14px', background: entry.rank <= 3 ? '#fff7ed' : '#fafafa', border: entry.rank <= 3 ? '1px solid #fed7aa' : '1px solid #f3e8d8' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: entry.rank === 1 ? '#f59e0b' : entry.rank === 2 ? '#9ca3af' : entry.rank === 3 ? '#d97706' : colors.primary, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '15px', marginRight: '16px', flexShrink: 0 }}>{entry.rank}</div>
                             <div style={{ flex: 1 }}>
                               <p style={{ fontWeight: 600, color: colors.text }}>{entry.name}</p>
                               <p style={{ fontSize: '13px', color: '#9ca3af' }}>Class {entry.class}</p>
                             </div>
-
-                            <div style={{ fontWeight: 'bold', color: colors.primary, fontSize: '18px' }}>
-                              {entry.value}
-                              <span style={{ fontSize: '13px', fontWeight: 500, color: '#9ca3af', marginLeft: '4px' }}>
-                                {leaderboardTab === 'streak' ? 'days' : ''}
-                              </span>
-                            </div>
+                            <div style={{ fontWeight: 'bold', color: colors.primary, fontSize: '18px' }}>{entry.value}<span style={{ fontSize: '13px', fontWeight: 500, color: '#9ca3af', marginLeft: '4px' }}>{leaderboardTab === 'streak' ? 'days' : ''}</span></div>
                           </div>
                         ))}
                       </div>
-
-                      <p style={{ textAlign: 'center', marginTop: '24px', color: '#9ca3af', fontSize: '13px' }}>
-                        This is demo data. Real leaderboard will connect to Supabase soon.
-                      </p>
+                      <p style={{ textAlign: 'center', marginTop: '24px', color: '#9ca3af', fontSize: '13px' }}>This is demo data. Real leaderboard will connect to Supabase soon.</p>
                     </div>
                   </div>
                 )}
@@ -1569,242 +1012,100 @@ setCurrentPage('dashboard');
                 {/* GROWTH TREE */}
                 {currentPage === 'tree' && (
                   <div style={{ maxWidth: '700px', margin: '0 auto', textAlign: 'center' }}>
-                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
-                      🌳 Your Growth Tree
-                    </h1>
+                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>🌳 Your Growth Tree</h1>
                     <p style={{ color: '#6b7280', marginBottom: '28px' }}>AR Filter – Make invisible growth visible</p>
-
-                    <div style={{
-                      position: 'relative',
-                      width: '100%',
-                      maxWidth: '520px',
-                      margin: '0 auto 28px',
-                      borderRadius: '20px',
-                      overflow: 'hidden',
-                      boxShadow: '0 12px 40px rgba(0,0,0,0.25)'
-                    }}>
-                      <video
-                        id="cameraFeed"
-                        autoPlay
-                        playsInline
-                        style={{ width: '100%', height: '400px', objectFit: 'cover', background: '#111' }}
-                      />
-                      <div style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        fontSize: '140px',
-                        animation: 'grow 3s infinite alternate',
-                        filter: 'drop-shadow(0 0 40px #4ade80)',
-                        pointerEvents: 'none',
-                        zIndex: 10
-                      }}>
-                        🌳
-                      </div>
-                      <div style={{
-                        position: 'absolute',
-                        bottom: '20px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        background: 'rgba(0,0,0,0.7)',
-                        color: 'white',
-                        padding: '8px 20px',
-                        borderRadius: '999px',
-                        fontSize: '14px',
-                        zIndex: 20
-                      }}>
-                        AR Filter Active • Level {Math.floor(user.streak / 3) + 1}
-                      </div>
+                    <div style={{ position: 'relative', width: '100%', maxWidth: '520px', margin: '0 auto 28px', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}>
+                      <video id="cameraFeed" autoPlay playsInline style={{ width: '100%', height: '400px', objectFit: 'cover', background: '#111' }} />
+                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '140px', animation: 'grow 3s infinite alternate', filter: 'drop-shadow(0 0 40px #4ade80)', pointerEvents: 'none', zIndex: 10 }}>🌳</div>
+                      <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '8px 20px', borderRadius: '999px', fontSize: '14px', zIndex: 20 }}>AR Filter Active • Level {Math.floor(user.streak / 3) + 1}</div>
                     </div>
-
-                    <button
-                      onClick={startCamera}
-                      style={{
-                        padding: '16px 40px',
-                        background: colors.accent,
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '999px',
-                        fontSize: '17px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        boxShadow: '0 8px 24px rgba(234,88,12,0.35)'
-                      }}
-                    >
-                      Start AR Camera (Selfie)
-                    </button>
-
+                    <button onClick={startCamera} style={{ padding: '16px 40px', background: colors.accent, color: 'white', border: 'none', borderRadius: '999px', fontSize: '17px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 24px rgba(234,88,12,0.35)' }}>Start AR Camera (Selfie)</button>
                     <div style={{ ...cardStyle, marginTop: '32px', display: 'inline-block', minWidth: '260px' }}>
-                      <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: colors.primary }}>
-                        Current Level: {Math.floor(user.streak / 3) + 1}
-                      </h3>
-                      <p style={{ color: '#6b7280', marginTop: '6px' }}>
-                        Streak: {user.streak} days | Seeds: {user.seeds}
-                      </p>
+                      <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: colors.primary }}>Current Level: {Math.floor(user.streak / 3) + 1}</h3>
+                      <p style={{ color: '#6b7280', marginTop: '6px' }}>Streak: {user.streak} days | Seeds: {user.seeds}</p>
                     </div>
                   </div>
                 )}
 
-                {/* CAREER PLACEHOLDER */}
+                {/* CAREER */}
                 {currentPage === 'career' && (
-  <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
-      🎯 Career Roadmap
-    </h1>
-    <p style={{ color: '#6b7280', marginBottom: '28px' }}>
-      Personalized guidance based on who you are becoming
-    </p>
+                  <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>🎯 Career Roadmap</h1>
+                    <p style={{ color: '#6b7280', marginBottom: '28px' }}>Personalized guidance + daily steps based on who you are becoming</p>
 
-    {/* Current Goal Card */}
-    <div style={{ ...cardStyle, marginBottom: '24px' }}>
-      <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '6px' }}>Your Current Big Goal</p>
-      <p style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary }}>
-        {user.goal || "Not set yet"}
-      </p>
-    </div>
+                    <div style={{ ...cardStyle, marginBottom: '24px' }}>
+                      <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>Your Current Big Goal</p>
+                      <p style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary }}>{user.goal || "Not set yet"}</p>
+                    </div>
 
-    {/* Analysis Button */}
-    {!careerAnalysis && (
-      <div style={{ ...cardStyle, textAlign: 'center', padding: '40px 24px' }}>
-        <p style={{ fontSize: '16px', color: colors.text, marginBottom: '24px', lineHeight: 1.6 }}>
-          I will look at your reflections, patterns, strengths and current goal to suggest the most fitting career direction for you.
-        </p>
-        <button
-          onClick={analyzeCareerPath}
-          disabled={isAnalyzingCareer}
-          style={{
-            padding: '16px 32px',
-            background: colors.accent,
-            color: 'white',
-            border: 'none',
-            borderRadius: '14px',
-            fontSize: '16px',
-            fontWeight: 600,
-            cursor: isAnalyzingCareer ? 'not-allowed' : 'pointer',
-            opacity: isAnalyzingCareer ? 0.7 : 1
-          }}
-        >
-          {isAnalyzingCareer ? "Analyzing your path..." : "Analyze My Career Path"}
-        </button>
-      </div>
-    )}
+                    {!careerAnalysis && (
+                      <div style={{ ...cardStyle, textAlign: 'center', padding: '36px 24px', marginBottom: '28px' }}>
+                        <p style={{ fontSize: '16px', color: colors.text, marginBottom: '24px', lineHeight: 1.6 }}>I will look at your reflections, patterns, strengths and current goal to suggest the most fitting career direction for you.</p>
+                        <button onClick={analyzeCareerPath} disabled={isAnalyzingCareer} style={{ padding: '14px 28px', background: colors.accent, color: 'white', border: 'none', borderRadius: '14px', fontSize: '16px', fontWeight: 600, cursor: isAnalyzingCareer ? 'not-allowed' : 'pointer', opacity: isAnalyzingCareer ? 0.7 : 1 }}>
+                          {isAnalyzingCareer ? "Analyzing your path..." : "Analyze My Career Path"}
+                        </button>
+                      </div>
+                    )}
 
-    {/* Daily steps */}
-    {dailyCareerStep && (
-  <div style={{ ...cardStyle, marginTop: '24px', border: '2px solid #fed7aa' }}>
-    <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: colors.primary, marginBottom: '12px' }}>
-      📌 Today's Career Step
-    </h3>
-    <p style={{ fontSize: '15px', lineHeight: 1.6, color: colors.text }}>
-      {dailyCareerStep}
-    </p>
-  </div>
-)}
+                    {careerAnalysis && (
+                      <div style={{ ...cardStyle, marginBottom: '28px' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.primary, marginBottom: '16px' }}>Your Career Analysis</h3>
+                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: colors.text, fontSize: '15px' }}>{careerAnalysis}</div>
+                        <button onClick={analyzeCareerPath} disabled={isAnalyzingCareer} style={{ marginTop: '20px', padding: '10px 20px', background: '#fff7ed', color: colors.primary, border: `1px solid ${colors.border}`, borderRadius: '12px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}>
+                          {isAnalyzingCareer ? "Re-analyzing..." : "Analyze Again"}
+                        </button>
+                      </div>
+                    )}
 
-    {/* AI Analysis Result */}
-    {careerAnalysis && (
-      <div style={{ ...cardStyle, marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.primary, marginBottom: '16px' }}>
-          Your Career Analysis
-        </h3>
-        <div style={{ 
-          whiteSpace: 'pre-wrap', 
-          lineHeight: 1.7, 
-          color: colors.text,
-          fontSize: '15px'
-        }}>
-          {careerAnalysis}
-        </div>
+                    {suggestedGoal && (
+                      <div style={{ ...cardStyle, marginBottom: '28px', border: '2px solid #fed7aa' }}>
+                        <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: colors.primary, marginBottom: '12px' }}>Would you like to update your goal?</h3>
+                        <p style={{ color: '#6b7280', marginBottom: '16px' }}>Suggested: <strong>{suggestedGoal}</strong></p>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                          <button onClick={() => updateUserGoal(suggestedGoal)} style={{ padding: '12px 20px', background: colors.accent, color: 'white', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}>Yes, update my goal</button>
+                          <button onClick={() => setSuggestedGoal("")} style={{ padding: '12px 20px', background: 'white', color: colors.text, border: '1px solid #e5e7eb', borderRadius: '12px', fontWeight: 500, cursor: 'pointer' }}>Keep my current goal</button>
+                        </div>
+                      </div>
+                    )}
 
-        <button
-          onClick={analyzeCareerPath}
-          disabled={isAnalyzingCareer}
-          style={{
-            marginTop: '20px',
-            padding: '10px 20px',
-            background: '#fff7ed',
-            color: colors.primary,
-            border: `1px solid ${colors.border}`,
-            borderRadius: '12px',
-            fontSize: '14px',
-            fontWeight: 500,
-            cursor: 'pointer'
-          }}
-        >
-          {isAnalyzingCareer ? "Re-analyzing..." : "Analyze Again"}
-        </button>
-      </div>
-    )}
+                    <div style={{ marginBottom: '16px' }}>
+                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary }}>Daily Career Timeline</h2>
+                    </div>
 
-    {/* Gentle Goal Update Section */}
-    {suggestedGoal && (
-      <div style={{ ...cardStyle, marginBottom: '24px', border: '2px solid #fed7aa' }}>
-        <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: colors.primary, marginBottom: '12px' }}>
-          Would you like to update your goal?
-        </h3>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          Suggested: <strong>{suggestedGoal}</strong>
-        </p>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => updateUserGoal(suggestedGoal)}
-            style={{
-              padding: '12px 20px',
-              background: colors.accent,
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            Yes, update my goal
-          </button>
-          <button
-            onClick={() => setSuggestedGoal("")}
-            style={{
-              padding: '12px 20px',
-              background: 'white',
-              color: colors.text,
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              fontWeight: 500,
-              cursor: 'pointer'
-            }}
-          >
-            Keep my current goal
-          </button>
-        </div>
-      </div>
-    )}
-  </div>
-)}
+                    <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+                      <button onClick={generateTodayCareerStep} disabled={isGeneratingStep} style={{ padding: '14px 28px', background: colors.primary, color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 600, cursor: isGeneratingStep ? 'not-allowed' : 'pointer', opacity: isGeneratingStep ? 0.7 : 1 }}>
+                        {isGeneratingStep ? "Creating today's task..." : "Generate Today's Career Task"}
+                      </button>
+                    </div>
 
+                    {careerSteps.length === 0 ? (
+                      <div style={{ ...cardStyle, textAlign: 'center', padding: '40px' }}>
+                        <p style={{ color: '#6b7280' }}>No career tasks yet.</p>
+                        <p style={{ color: '#9ca3af', marginTop: '8px' }}>Click the button above to generate your first personalized daily task.</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {careerSteps.map((step, index) => (
+                          <div key={step.id} style={{ ...cardStyle, display: 'flex', gap: '16px', alignItems: 'flex-start', borderLeft: index === 0 ? `4px solid ${colors.accent}` : '4px solid #fed7aa' }}>
+                            <div style={{ minWidth: '60px', textAlign: 'center', paddingTop: '4px' }}>
+                              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: index === 0 ? colors.accent : '#d6a67a', margin: '0 auto 6px' }} />
+                              <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>{step.date ? step.date.slice(5) : '—'}</p>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <p style={{ fontSize: '15px', lineHeight: 1.6, color: colors.text }}>{step.step_text}</p>
+                              {step.is_completed && <p style={{ fontSize: '13px', color: '#059669', marginTop: '6px' }}>✓ Completed</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </main>
 
-              
-
-              {/* Mobile Bottom Navigation */}
               <nav className="mobile-bottom-nav">
                 {navItems.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => goToPage(item.id)}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      background: 'none',
-                      border: 'none',
-                      padding: '6px 8px',
-                      cursor: 'pointer',
-                      color: currentPage === item.id ? colors.primary : '#9ca3af',
-                      fontSize: '10px',
-                      fontWeight: 500,
-                      minWidth: '60px'
-                    }}
-                  >
+                  <button key={item.id} onClick={() => goToPage(item.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'none', border: 'none', padding: '6px 8px', cursor: 'pointer', color: currentPage === item.id ? colors.primary : '#9ca3af', fontSize: '10px', fontWeight: 500, minWidth: '60px' }}>
                     <span style={{ fontSize: '20px' }}>{item.icon}</span>
                     <span style={{ marginTop: '2px' }}>{item.label.split(' ')[0]}</span>
                   </button>
@@ -1819,6 +1120,3 @@ setCurrentPage('dashboard');
 }
 
 export default App;
-
-
-//By Aarav Singh, Shashi Shekhar, Akshat Ranjan and our another friends (Named AI!{And obvioulsy others 🙄})
