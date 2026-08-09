@@ -4,7 +4,7 @@ import { getAIMentorResponse } from './aiService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard' | 'stats' | 'mirror' | 'reels'>('login');
+  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard' | 'stats' | 'mirror' | 'reels' | 'planner'>('login');
   
   const [loginId, setLoginId] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -30,6 +30,10 @@ function App() {
   const [reelsCategory, setReelsCategory] = useState<'all' | 'facts' | 'space' | 'mindset'>('all');
   const [watchedReelsCount, setWatchedReelsCount] = useState(0);
   const [showReelsLimit, setShowReelsLimit] = useState(false);
+
+  const [plannerInput, setPlannerInput] = useState("");
+  const [weeklyPlan, setWeeklyPlan] = useState<string>("");
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -191,6 +195,56 @@ function App() {
     }
     setStatsLoading(false);
   };
+
+  // ==================== DAILY / WEEKLY PLANNER ====================
+const generateWeeklyPlan = async () => {
+  if (!user.id) return;
+  setIsGeneratingPlan(true);
+  setWeeklyPlan("");
+
+  try {
+    const trajectory = calculateTrajectory();
+
+    const prompt = `You are Lumora's Weekly Planner.
+
+Student Goal: ${user.goal}
+Class: ${user.class}
+Streak: ${user.streak}
+Study Feeling: ${user.studyFeeling}
+
+Current Trajectory:
+Study Consistency: ${trajectory.studyConsistency}
+Energy: ${trajectory.energy}
+Burnout Risk: ${trajectory.burnoutRisk}
+
+What the student wants to focus on this week:
+${plannerInput || "General progress toward my goal"}
+
+Create a light and realistic weekly plan.
+
+Rules:
+- Only give 5 short tasks for the whole week (not a full timetable)
+- Each task should be small and achievable
+- Make it personalized
+- Format clearly like this:
+
+Monday: ...
+Tuesday: ...
+Wednesday: ...
+Thursday: ...
+Friday: ...
+
+Keep the total response under 120 words.`;
+
+    const result = await getAIMentorResponse(user, prompt);
+    setWeeklyPlan(result.response);
+
+  } catch (error) {
+    setWeeklyPlan("Sorry, I couldn't create your plan right now. Please try again.");
+  }
+
+  setIsGeneratingPlan(false);
+};
 
   // ==================== POMODORO ====================
   useEffect(() => {
@@ -724,6 +778,7 @@ Rules:
     { id: 'leaderboard' as const, label: 'Leaderboard', icon: '🏆' },
     { id: 'reels' as const, label: 'Reels', icon: '🎬' },
     { id: 'tree' as const, label: 'Growth Tree', icon: '🌳' },
+    { id: 'planner' as const, label: 'Planner', icon: '📅' },
     { id: 'career' as const, label: 'Career', icon: '🎯' },
   ];
 
@@ -1270,6 +1325,53 @@ Rules:
                     </div>
                   </div>
                 )}
+
+                {/* PLANNER PAGE */}
+{currentPage === 'planner' && (
+  <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>
+      📅 Weekly Planner
+    </h1>
+    <p style={{ color: '#6b7280', marginBottom: '28px' }}>
+      Light personalized tasks for this week
+    </p>
+
+    <div style={{ ...cardStyle, marginBottom: '24px' }}>
+      <label style={{ display: 'block', marginBottom: '10px', fontWeight: 500, color: colors.text }}>
+        What do you want to focus on this week?
+      </label>
+      <textarea
+        placeholder="Example: Improve consistency in Physics, prepare for upcoming test, reduce distractions..."
+        value={plannerInput}
+        onChange={e => setPlannerInput(e.target.value)}
+        style={{ ...inputStyle, height: '100px', resize: 'vertical' }}
+      />
+
+      <button
+        onClick={generateWeeklyPlan}
+        disabled={isGeneratingPlan}
+        style={{
+          ...buttonStyle,
+          opacity: isGeneratingPlan ? 0.7 : 1,
+          marginTop: '8px'
+        }}
+      >
+        {isGeneratingPlan ? "Creating your plan..." : "Generate My Weekly Plan"}
+      </button>
+    </div>
+
+    {weeklyPlan && (
+      <div style={{ ...cardStyle }}>
+        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.primary, marginBottom: '16px' }}>
+          Your Personalized Plan
+        </h3>
+        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: colors.text, fontSize: '15px' }}>
+          {weeklyPlan}
+        </div>
+      </div>
+    )}
+  </div>
+)}
 
                 {/* CAREER */}
                 {currentPage === 'career' && (
