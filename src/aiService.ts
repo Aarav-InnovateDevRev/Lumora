@@ -7,20 +7,18 @@ export const getAIMentorResponse = async (userData: any, userMessage: string = "
 
     if (!GROQ_API_KEY) {
       return { 
-        response: "API key is missing. Please check your Vercel Environment Variables.", 
+        response: "API key is missing. Please check your environment variables.", 
         insight: "" 
       };
     }
 
-    // ==================== 1. FETCH RICH MEMORY ====================
-    
-    // Last 30 reflections
+    // Fetch recent reflections
     const { data: reflections } = await supabase
       .from('daily_reflections')
       .select('*')
       .eq('user_id', userData.id)
       .order('date', { ascending: false })
-      .limit(30);
+      .limit(20);
 
     // Hidden discoveries
     const { data: discoveries } = await supabase
@@ -28,24 +26,16 @@ export const getAIMentorResponse = async (userData: any, userMessage: string = "
       .select('pattern')
       .eq('user_id', userData.id)
       .order('discovered_date', { ascending: false })
-      .limit(10);
+      .limit(8);
 
-    // ==================== 2. CALCULATE TRAJECTORY ====================
-    let trajectoryText = "Not enough data yet to calculate trajectory.";
-
+    // Calculate simple trajectory
+    let trajectoryText = "Not enough data yet.";
     if (reflections && reflections.length > 0) {
-      const recent = reflections.slice(0, 14);
+      const recent = reflections.slice(0, 10);
       const count = recent.length;
 
       const avgHours = recent.reduce((sum: number, r: any) => sum + (Number(r.study_hours) || 0), 0) / count;
       const studyConsistency = Math.min(100, Math.round((avgHours / 4) * 100));
-
-      const confidenceScore = recent.reduce((sum: number, r: any) => {
-        if (r.confidence === 'High') return sum + 3;
-        if (r.confidence === 'Medium') return sum + 2;
-        return sum + 1;
-      }, 0);
-      const skillGrowth = Math.round((confidenceScore / (count * 3)) * 100);
 
       const moodScore = recent.reduce((sum: number, r: any) => {
         if (r.mood === 'Great') return sum + 5;
@@ -56,75 +46,45 @@ export const getAIMentorResponse = async (userData: any, userMessage: string = "
       }, 0);
       const energy = Math.round((moodScore / (count * 5)) * 100);
 
-      const goalAlignment = Math.min(100, Math.round((userData.streak * 4) + (count * 2)));
-      const burnoutRisk = Math.min(100, Math.round(100 - energy + (avgHours > 5 ? 20 : 0)));
-
       trajectoryText = `
-Study Consistency: ${studyConsistency}/100
-Skill Growth: ${skillGrowth}/100
-Energy / Mood: ${energy}/100
-Goal Alignment: ${goalAlignment}/100
-Burnout Risk: ${burnoutRisk}/100
+Work Consistency: ${studyConsistency}/100
+Energy Level: ${energy}/100
+Current Streak: ${userData.streak || 0} days
 `;
-    }
-
-    // ==================== 3. BUILD CONTEXT ====================
-
-    const totalHours = reflections?.reduce((sum: number, r: any) => sum + (Number(r.study_hours) || 0), 0) || 0;
-    const level = Math.floor((userData.streak || 0) / 3) + 1;
-
-    let reflectionsSummary = "No reflections yet.";
-    if (reflections && reflections.length > 0) {
-      reflectionsSummary = reflections.slice(0, 8).map((r: any, i: number) => {
-        return `${i + 1}. ${r.date} | Hours: ${r.study_hours} | Mood: ${r.mood} | Confidence: ${r.confidence}`;
-      }).join('\n');
     }
 
     const discoveriesText = discoveries && discoveries.length > 0
       ? discoveries.map((d: any) => `- ${d.pattern}`).join('\n')
       : "No discoveries yet.";
 
-    // ==================== 4. SYSTEM PROMPT ====================
-
     const systemPrompt = `
-You are Lumora — an AI Growth Mentor for students.
+You are Lumora Office — an AI Growth Companion for professionals and employees.
 
-Your core philosophy:
-- Memory over conversation
-- Progress over productivity
-- Show the student where their current patterns are leading them
+Your role is to help employees grow in their career, improve consistency, manage energy, and stay aligned with their goals.
 
-=== STUDENT PROFILE ===
+=== EMPLOYEE PROFILE ===
 Name: ${userData.name}
-Class: ${userData.class}
-Big Goal: ${userData.goal}
-Usual Study Feeling: ${userData.studyFeeling}
-Preferred Tone: ${userData.preferredTone || "Friendly"}
+Role / Department: ${userData.class || "Not specified"}
+Current Goal: ${userData.goal}
+Usual Work Feeling: ${userData.studyFeeling}
 
 === GROWTH METRICS ===
 Current Streak: ${userData.streak || 0} days
 Total Seeds: ${userData.seeds || 0}
-Current Level: ${level}
-Total Study Hours (last 30 days): ${totalHours.toFixed(1)}
 
 === CURRENT TRAJECTORY ===
 ${trajectoryText}
 
-=== RECENT REFLECTIONS ===
-${reflectionsSummary}
-
 === HIDDEN DISCOVERIES ===
 ${discoveriesText}
 
-=== YOUR ROLE ===
-- Speak with warmth and honesty
-- Reference the student's real trajectory when relevant
-- Help them see where their current habits are leading
-- Give practical advice
-- Keep responses clear (max 180 words)
+=== YOUR STYLE ===
+- Professional yet warm
+- Practical and clear
+- Focus on sustainable growth
+- Never generic
+- Keep responses under 160 words
 `;
-
-    // ==================== 5. CALL GROQ ====================
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -136,27 +96,24 @@ ${discoveriesText}
         model: "llama-3.1-8b-instant",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage || "Give me personalized growth advice based on my current trajectory." }
+          { role: "user", content: userMessage || "Give me personalized professional growth advice." }
         ],
         temperature: 0.7,
-        max_tokens: 450
+        max_tokens: 400
       })
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Groq Error:", errorText);
       return { 
-        response: `Sorry, I'm having trouble connecting right now (Error ${response.status}). Please try again.`, 
+        response: `Sorry, I'm having trouble connecting right now. Please try again.`, 
         insight: "" 
       };
     }
 
     const data = await response.json();
-    const fullResponse = data.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
+    const fullResponse = data.choices[0]?.message?.content || "I couldn't generate a response.";
 
-    // ==================== 6. GENERATE SHORT INSIGHT ====================
-
+    // Short insight
     let shortInsight = "";
     try {
       const insightResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -170,12 +127,12 @@ ${discoveriesText}
           messages: [
             { 
               role: "system", 
-              content: "You are an insight extractor. From the mentor's advice, create one short, inspiring discovery about the student (maximum 70 characters)." 
+              content: "Create one short professional insight (max 70 characters) from the advice." 
             },
             { role: "user", content: fullResponse }
           ],
           temperature: 0.6,
-          max_tokens: 60
+          max_tokens: 50
         })
       });
 
@@ -183,9 +140,7 @@ ${discoveriesText}
         const insightData = await insightResponse.json();
         shortInsight = insightData.choices[0]?.message?.content?.trim() || "";
       }
-    } catch (e) {
-      console.error("Insight generation failed:", e);
-    }
+    } catch (e) {}
 
     return { 
       response: fullResponse, 
@@ -195,7 +150,7 @@ ${discoveriesText}
   } catch (error) {
     console.error("AI Error:", error);
     return { 
-      response: "Sorry, I'm having trouble connecting right now. Please try again later 🌱", 
+      response: "Sorry, something went wrong. Please try again later.", 
       insight: "" 
     };
   }
