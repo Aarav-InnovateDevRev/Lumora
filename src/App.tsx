@@ -200,6 +200,58 @@ const checkStreakMilestones = async (newStreak: number) => {
   }
 };
 
+// ==================== CALCULATE TRAJECTORY ====================
+const calculateTrajectory = () => {
+  if (reflectionsData.length === 0) {
+    return {
+      studyConsistency: 50,
+      skillGrowth: 50,
+      energy: 50,
+      goalAlignment: 50,
+      burnoutRisk: 50
+    };
+  }
+
+  const recent = reflectionsData.slice(-14); // last 14 days if available
+  const count = recent.length;
+
+  // Study Consistency (based on study hours)
+  const avgHours = recent.reduce((sum, r) => sum + (Number(r.study_hours) || 0), 0) / count;
+  const studyConsistency = Math.min(100, Math.round((avgHours / 4) * 100)); // 4 hours = 100%
+
+  // Skill Growth (based on confidence)
+  const confidenceScore = recent.reduce((sum, r) => {
+    if (r.confidence === 'High') return sum + 3;
+    if (r.confidence === 'Medium') return sum + 2;
+    return sum + 1;
+  }, 0);
+  const skillGrowth = Math.round((confidenceScore / (count * 3)) * 100);
+
+  // Energy (based on mood)
+  const moodScore = recent.reduce((sum, r) => {
+    if (r.mood === 'Great') return sum + 5;
+    if (r.mood === 'Good') return sum + 4;
+    if (r.mood === 'Okay') return sum + 3;
+    if (r.mood === 'Tired') return sum + 2;
+    return sum + 1;
+  }, 0);
+  const energy = Math.round((moodScore / (count * 5)) * 100);
+
+  // Goal Alignment (simple: higher if user has reflections + streak)
+  const goalAlignment = Math.min(100, Math.round((user.streak * 4) + (count * 2)));
+
+  // Burnout Risk (higher when mood is low + high study hours)
+  const burnoutRisk = Math.min(100, Math.round(100 - energy + (avgHours > 5 ? 20 : 0)));
+
+  return {
+    studyConsistency,
+    skillGrowth,
+    energy,
+    goalAlignment,
+    burnoutRisk
+  };
+};
+
   // ==================== LOGIN ====================
   const handleLogin = async () => {
     setLoginError("");
@@ -350,7 +402,7 @@ const checkStreakMilestones = async (newStreak: number) => {
     await checkStreakMilestones(newStreak);
 
     setHiddenDiscoveries(prev => [...prev, `Reflection saved! Mood: ${reflection.mood}`]);
-    alert("Reflection Saved! +1 Streak & +15 Seeds");
+    alert("Reflection Saved! +1 Streak🔥 & +15 Seeds🌱");
     setCurrentPage('dashboard');
   };
 
@@ -484,41 +536,73 @@ SUGGESTED_GOAL: New Goal Here`;
     if (data) setCareerSteps(data);
   };
 
-  const generateTodayCareerStep = async () => {
-    if (!user.id) return;
-    setIsGeneratingStep(true);
+  // ==================== GENERATE TODAY'S CAREER STEP (with last 5 steps context) ====================
+const generateTodayCareerStep = async () => {
+  if (!user.id) return;
+  setIsGeneratingStep(true);
 
-    try {
-      const prompt = `You are Lumora's Career Coach.
-Based on this student's real data (goal: ${user.goal}, class: ${user.class}, streak, reflections and patterns), give ONE small, practical career task for TODAY.
-Rules:
-- Only return the task text
-- Make it specific and achievable in one day
-- Maximum 20 words
-- Do not write any introduction or extra text`;
+  try {
+    // 1. Get the last 5 career steps from database
+    const { data: previousSteps } = await supabase
+      .from('career_steps')
+      .select('step_text, date')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
 
-      const result = await getAIMentorResponse(user, prompt);
-      const stepText = result.response.trim();
-      const today = new Date().toISOString().split('T')[0];
-
-      const { error } = await supabase.from('career_steps').insert([{
-        user_id: user.id,
-        step_text: stepText,
-        is_completed: false,
-        date: today
-      }]);
-
-      if (!error) {
-        await loadCareerTimeline();
-        await addSeeds(8, "Generated today's Career Task");
-      } else {
-        alert("Could not save the task. Please try again.");
-      }
-    } catch (error) {
-      alert("Something went wrong while generating the task.");
+    // 2. Create a clean summary of previous steps
+    let previousStepsText = "No previous career steps yet.";
+    if (previousSteps && previousSteps.length > 0) {
+      previousStepsText = previousSteps
+        .map((step, index) => `${index + 1}. [${step.date}] ${step.step_text}`)
+        .join('\n');
     }
-    setIsGeneratingStep(false);
-  };
+
+    // 3. Better prompt with history
+    const prompt = `You are Lumora's Career Coach for a Class ${user.class} student.
+
+Student's Big Goal: ${user.goal}
+
+Here are the student's last 5 career steps (most recent first):
+${previousStepsText}
+
+Now generate ONE new small, practical career task for TODAY.
+
+Rules:
+- Do NOT repeat any of the previous steps
+- Make it specific and achievable in one day
+- Connect it to the student's goal
+- Maximum 20 words
+- Only return the task text, nothing else`;
+
+    // 4. Call AI
+    const result = await getAIMentorResponse(user, prompt);
+    const stepText = result.response.trim();
+
+    // 5. Save the new step
+    const today = new Date().toISOString().split('T')[0];
+
+    const { error } = await supabase.from('career_steps').insert([{
+      user_id: user.id,
+      step_text: stepText,
+      is_completed: false,
+      date: today
+    }]);
+
+    if (!error) {
+      await loadCareerTimeline();
+      await addSeeds(8, "Generated today's Career Task");
+    } else {
+      alert("Could not save the task. Please try again.");
+    }
+
+  } catch (error) {
+    console.error(error);
+    alert("Something went wrong while generating the task.");
+  }
+
+  setIsGeneratingStep(false);
+};
 
   // ==================== AR CAMERA ====================
   const startCamera = () => {
@@ -924,6 +1008,54 @@ Rules:
                           <div style={cardStyle}><p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Current Streak</p><p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{user.streak}</p></div>
                           <div style={cardStyle}><p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '6px' }}>Total Seeds</p><p style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>{user.seeds}</p></div>
                         </div>
+
+                        {/* ===== CURRENT TRAJECTORY ===== */}
+                        {(() => {
+  const trajectory = calculateTrajectory();
+  
+  const getTrend = (score: number) => {
+    if (score >= 70) return { arrow: '↗', color: '#16a34a', label: 'Strong' };
+    if (score >= 45) return { arrow: '→', color: '#ca8a04', label: 'Stable' };
+    return { arrow: '↘', color: '#dc2626', label: 'Needs Attention' };
+  };
+
+  const items = [
+    { name: 'Study Consistency', score: trajectory.studyConsistency, icon: '📚' },
+    { name: 'Skill Growth', score: trajectory.skillGrowth, icon: '💻' },
+    { name: 'Energy / Mood', score: trajectory.energy, icon: '⚡' },
+    { name: 'Goal Alignment', score: trajectory.goalAlignment, icon: '🎯' },
+    { name: 'Burnout Risk', score: trajectory.burnoutRisk, icon: '🔥', reverse: true },
+  ];
+
+  return (
+    <div style={{ ...cardStyle, marginBottom: '32px' }}>
+      <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>
+        🔮 Current Trajectory
+      </h3>
+      <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '20px' }}>
+        Based on your recent patterns
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {items.map((item) => {
+          const trend = getTrend(item.reverse ? 100 - item.score : item.score);
+          return (
+            <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '18px' }}>{item.icon}</span>
+                <span style={{ fontWeight: 500, color: colors.text }}>{item.name}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px', color: trend.color, fontWeight: 'bold' }}>{trend.arrow}</span>
+                <span style={{ fontSize: '13px', color: trend.color, fontWeight: 500 }}>{trend.label}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+})()}
                         {reflectionsData.length === 0 ? (
                           <div style={{ ...cardStyle, textAlign: 'center', padding: '50px' }}><p style={{ fontSize: '18px', color: '#6b7280' }}>No reflections yet.</p><p style={{ color: '#9ca3af', marginTop: '8px' }}>Complete a few daily reflections to see your graphs here.</p></div>
                         ) : (
