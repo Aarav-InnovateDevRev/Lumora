@@ -4,7 +4,7 @@ import { getAIMentorResponse } from './aiService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard' | 'stats' | 'mirror'>('login');
+  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard' | 'stats' | 'mirror' | 'reels'>('login');
   
   const [loginId, setLoginId] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -26,6 +26,10 @@ function App() {
   const [chatHistory, setChatHistory] = useState<{role: string, content: string}[]>([]);
   const [messageLimit, setMessageLimit] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [reelsCategory, setReelsCategory] = useState<'all' | 'facts' | 'space' | 'mindset'>('all');
+  const [watchedReelsCount, setWatchedReelsCount] = useState(0);
+  const [showReelsLimit, setShowReelsLimit] = useState(false);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -70,6 +74,65 @@ function App() {
       { name: "Kabir", class: "9", value: 240, rank: 8 },
     ]
   };
+
+  const reelsData = [
+  {
+    id: 1,
+    title: "Strange Facts About Your Body",
+    channel: "FactoHolic",
+    category: "facts",
+    videoId: "tJ2nrgUMWy8"
+  },
+  {
+    id: 2,
+    title: "Why Do We Crave Sweets",
+    channel: "FactoHolic",
+    category: "facts",
+    videoId: "tL_zR0lA3ns"
+  },
+  {
+    id: 3,
+    title: "The Nasal Cycle",
+    channel: "FactoHolic",
+    category: "facts",
+    videoId: "rqaVLsjqfok"
+  },
+  {
+    id: 4,
+    title: "Saturn's Perfect Hexagon",
+    channel: "Spacetopia",
+    category: "space",
+    videoId: "peGn_Bw1R1c"
+  },
+  {
+    id: 5,
+    title: "Moon Has a Comet-like Tail",
+    channel: "Spacetopia",
+    category: "space",
+    videoId: "BkYW-9T1_Tg"
+  },
+  {
+    id: 6,
+    title: "The Loneliest Place in the Universe",
+    channel: "Spacetopia",
+    category: "space",
+    videoId: "4rITv5ceH2I"
+  },
+  {
+    id: 7,
+    title: "How Medicines Work",
+    channel: "FactoHolic",
+    category: "facts",
+    videoId: "zE1pGmSbtAc"
+  },
+  {
+    id: 8,
+    title: "Stay Consistent - Study Motivation",
+    channel: "Mindset",
+    category: "mindset",
+    videoId: "ZXsQAXx_ao0"
+  }
+];
 
   // ==================== LOAD USER ====================
   useEffect(() => {
@@ -659,6 +722,7 @@ Rules:
     { id: 'stats' as const, label: 'Stats', icon: '📊' },
     { id: 'pomodoro' as const, label: 'Pomodoro', icon: '⏱️' },
     { id: 'leaderboard' as const, label: 'Leaderboard', icon: '🏆' },
+    { id: 'reels' as const, label: 'Reels', icon: '🎬' },
     { id: 'tree' as const, label: 'Growth Tree', icon: '🌳' },
     { id: 'career' as const, label: 'Career', icon: '🎯' },
   ];
@@ -1281,6 +1345,131 @@ Rules:
                     )}
                   </div>
                 )}
+
+                {/* REELS PAGE */}
+{currentPage === 'reels' && (
+  <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>
+      🎬 Study Reels
+    </h1>
+    <p style={{ color: '#6b7280', marginBottom: '24px' }}>
+      Short educational videos to boost curiosity
+    </p>
+
+    {/* Category Filters */}
+    <div style={{ display: 'flex', gap: '8px', marginBottom: '28px', flexWrap: 'wrap' }}>
+      {['all', 'facts', 'space', 'mindset'].map(cat => (
+        <button
+          key={cat}
+          onClick={() => setReelsCategory(cat as any)}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '999px',
+            border: 'none',
+            fontWeight: 600,
+            fontSize: '14px',
+            cursor: 'pointer',
+            background: reelsCategory === cat ? colors.primary : '#fff7ed',
+            color: reelsCategory === cat ? 'white' : colors.primary
+          }}
+        >
+          {cat.charAt(0).toUpperCase() + cat.slice(1)}
+        </button>
+      ))}
+    </div>
+
+    {/* Limit Message */}
+    {showReelsLimit ? (
+      <div style={{ ...cardStyle, textAlign: 'center', padding: '40px 24px' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🌿</div>
+        <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary, marginBottom: '12px' }}>
+          You’ve explored enough for now
+        </h3>
+        <p style={{ color: '#6b7280', lineHeight: 1.6, marginBottom: '28px' }}>
+          Real growth happens when you return to your goals.<br />
+          Ready to take one small step?
+        </p>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => goToPage('dashboard')}
+            style={{
+              padding: '12px 24px',
+              background: colors.accent,
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            Back to Dashboard
+          </button>
+          <button
+            onClick={() => {
+              setShowReelsLimit(false);
+              setWatchedReelsCount(0);
+            }}
+            style={{
+              padding: '12px 24px',
+              background: 'white',
+              color: colors.primary,
+              border: `2px solid ${colors.primary}`,
+              borderRadius: '12px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            Continue watching
+          </button>
+        </div>
+      </div>
+    ) : (
+      /* Reels Feed */
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+        {reelsData
+          .filter(reel => reelsCategory === 'all' || reel.category === reelsCategory)
+          .map(reel => (
+            <div
+              key={reel.id}
+              style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}
+              onClick={() => {
+                const newCount = watchedReelsCount + 1;
+                setWatchedReelsCount(newCount);
+                if (newCount >= 6) {
+                  setShowReelsLimit(true);
+                }
+              }}
+            >
+              <div style={{ position: 'relative', paddingBottom: '177%', height: 0 }}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${reel.videoId}?rel=0`}
+                  title={reel.title}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    border: 'none'
+                  }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+              <div style={{ padding: '16px' }}>
+                <p style={{ fontWeight: 600, color: colors.text, marginBottom: '4px' }}>{reel.title}</p>
+                <p style={{ fontSize: '13px', color: '#9ca3af' }}>{reel.channel}</p>
+              </div>
+            </div>
+          ))}
+      </div>
+    )}
+
+    <p style={{ textAlign: 'center', marginTop: '32px', fontSize: '13px', color: '#9ca3af' }}>
+      Videos are embedded from public educational channels for learning purposes.
+    </p>
+  </div>
+)}
               </main>
 
               <nav className="mobile-bottom-nav">
