@@ -444,24 +444,56 @@ const calculateTrajectory = () => {
     setIsLoading(false);
   };
 
-  // ==================== FUTURE YOU ====================
-  const generateFutureVision = async () => {
-    if (!user.id) return;
-    setIsGeneratingFuture(true);
-    setFutureVision("");
+  // ==================== FUTURE YOU (with Trajectory + Habit Simulation) ====================
+const generateFutureVision = async () => {
+  if (!user.id) return;
+  setIsGeneratingFuture(true);
+  setFutureVision("");
 
-    try {
-      const result = await getAIMentorResponse(
-        user,
-        `Based on everything you know about me (my goal, streak, reflections, mood patterns and growth), write a short, inspiring and realistic "Future You" vision. Speak in second person ("You will..."). Make it personal and hopeful but honest. Maximum 90 words.`
-      );
-      setFutureVision(result.response);
-      await addSeeds(10, "Generated Future You glimpse");
-    } catch (error) {
-      setFutureVision("Something went wrong while creating your future glimpse. Please try again.");
-    }
-    setIsGeneratingFuture(false);
-  };
+  try {
+    // Calculate current trajectory
+    const trajectory = calculateTrajectory();
+
+    const prompt = `You are Lumora's Future Vision guide.
+
+Student Goal: ${user.goal}
+Class: ${user.class}
+Current Streak: ${user.streak}
+
+Current Trajectory:
+- Study Consistency: ${trajectory.studyConsistency}/100
+- Skill Growth: ${trajectory.skillGrowth}/100
+- Energy / Mood: ${trajectory.energy}/100
+- Goal Alignment: ${trajectory.goalAlignment}/100
+- Burnout Risk: ${trajectory.burnoutRisk}/100
+
+Write a short and powerful Future Glimpse for this student.
+
+Structure your response exactly like this:
+
+Current Trajectory Summary:
+(2-3 sentences about where their current patterns are leading)
+
+One Habit Change:
+(Suggest ONE realistic habit change that would improve their trajectory. Example: +45 minutes of sleep, 25-minute focused study blocks, etc.)
+
+New Possible Trajectory:
+(Describe how that one change could positively shift their future)
+
+Keep the whole response under 140 words. Be honest, warm and specific.`;
+
+    const result = await getAIMentorResponse(user, prompt);
+    setFutureVision(result.response);
+
+    // Give Seeds
+    await addSeeds(10, "Generated Future You glimpse");
+
+  } catch (error) {
+    setFutureVision("Something went wrong while creating your future glimpse. Please try again.");
+  }
+
+  setIsGeneratingFuture(false);
+};
 
   // ==================== CAREER ====================
   const analyzeCareerPath = async () => {

@@ -30,16 +30,53 @@ export const getAIMentorResponse = async (userData: any, userMessage: string = "
       .order('discovered_date', { ascending: false })
       .limit(10);
 
-    // ==================== 2. BUILD CONTEXT ====================
+    // ==================== 2. CALCULATE TRAJECTORY ====================
+    let trajectoryText = "Not enough data yet to calculate trajectory.";
+
+    if (reflections && reflections.length > 0) {
+      const recent = reflections.slice(0, 14);
+      const count = recent.length;
+
+      const avgHours = recent.reduce((sum: number, r: any) => sum + (Number(r.study_hours) || 0), 0) / count;
+      const studyConsistency = Math.min(100, Math.round((avgHours / 4) * 100));
+
+      const confidenceScore = recent.reduce((sum: number, r: any) => {
+        if (r.confidence === 'High') return sum + 3;
+        if (r.confidence === 'Medium') return sum + 2;
+        return sum + 1;
+      }, 0);
+      const skillGrowth = Math.round((confidenceScore / (count * 3)) * 100);
+
+      const moodScore = recent.reduce((sum: number, r: any) => {
+        if (r.mood === 'Great') return sum + 5;
+        if (r.mood === 'Good') return sum + 4;
+        if (r.mood === 'Okay') return sum + 3;
+        if (r.mood === 'Tired') return sum + 2;
+        return sum + 1;
+      }, 0);
+      const energy = Math.round((moodScore / (count * 5)) * 100);
+
+      const goalAlignment = Math.min(100, Math.round((userData.streak * 4) + (count * 2)));
+      const burnoutRisk = Math.min(100, Math.round(100 - energy + (avgHours > 5 ? 20 : 0)));
+
+      trajectoryText = `
+Study Consistency: ${studyConsistency}/100
+Skill Growth: ${skillGrowth}/100
+Energy / Mood: ${energy}/100
+Goal Alignment: ${goalAlignment}/100
+Burnout Risk: ${burnoutRisk}/100
+`;
+    }
+
+    // ==================== 3. BUILD CONTEXT ====================
 
     const totalHours = reflections?.reduce((sum: number, r: any) => sum + (Number(r.study_hours) || 0), 0) || 0;
     const level = Math.floor((userData.streak || 0) / 3) + 1;
 
-    // Create a clean summary of recent reflections
     let reflectionsSummary = "No reflections yet.";
     if (reflections && reflections.length > 0) {
-      reflectionsSummary = reflections.slice(0, 10).map((r: any, i: number) => {
-        return `${i + 1}. Date: ${r.date} | Hours: ${r.study_hours} | Mood: ${r.mood} | Confidence: ${r.confidence} | Wins: ${r.wins || '-'} | Struggles: ${r.struggles || '-'}`;
+      reflectionsSummary = reflections.slice(0, 8).map((r: any, i: number) => {
+        return `${i + 1}. ${r.date} | Hours: ${r.study_hours} | Mood: ${r.mood} | Confidence: ${r.confidence}`;
       }).join('\n');
     }
 
@@ -47,7 +84,7 @@ export const getAIMentorResponse = async (userData: any, userMessage: string = "
       ? discoveries.map((d: any) => `- ${d.pattern}`).join('\n')
       : "No discoveries yet.";
 
-    // ==================== 3. SYSTEM PROMPT (LUMORA PHILOSOPHY) ====================
+    // ==================== 4. SYSTEM PROMPT ====================
 
     const systemPrompt = `
 You are Lumora — an AI Growth Mentor for students.
@@ -55,10 +92,7 @@ You are Lumora — an AI Growth Mentor for students.
 Your core philosophy:
 - Memory over conversation
 - Progress over productivity
-- Small daily actions create long-term transformation
-- You help students understand who they are becoming
-
-You are NOT a generic chatbot. You are a long-term Mirror of Progress.
+- Show the student where their current patterns are leading them
 
 === STUDENT PROFILE ===
 Name: ${userData.name}
@@ -73,24 +107,24 @@ Total Seeds: ${userData.seeds || 0}
 Current Level: ${level}
 Total Study Hours (last 30 days): ${totalHours.toFixed(1)}
 
-=== RECENT REFLECTIONS (most recent first) ===
+=== CURRENT TRAJECTORY ===
+${trajectoryText}
+
+=== RECENT REFLECTIONS ===
 ${reflectionsSummary}
 
 === HIDDEN DISCOVERIES ===
 ${discoveriesText}
 
 === YOUR ROLE ===
-- Speak with warmth, honesty and encouragement
-- Reference the student's actual history when relevant
-- Help them see patterns and growth
-- Give practical, specific advice
-- Never be generic
-- Keep responses clear and not too long (max 180 words)
-
-When the student asks something, always reason from their real data above.
+- Speak with warmth and honesty
+- Reference the student's real trajectory when relevant
+- Help them see where their current habits are leading
+- Give practical advice
+- Keep responses clear (max 180 words)
 `;
 
-    // ==================== 4. CALL GROQ ====================
+    // ==================== 5. CALL GROQ ====================
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -102,7 +136,7 @@ When the student asks something, always reason from their real data above.
         model: "llama-3.1-8b-instant",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage || "Give me personalized growth advice based on my recent journey." }
+          { role: "user", content: userMessage || "Give me personalized growth advice based on my current trajectory." }
         ],
         temperature: 0.7,
         max_tokens: 450
@@ -121,7 +155,7 @@ When the student asks something, always reason from their real data above.
     const data = await response.json();
     const fullResponse = data.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
 
-    // ==================== 5. GENERATE SHORT INSIGHT ====================
+    // ==================== 6. GENERATE SHORT INSIGHT ====================
 
     let shortInsight = "";
     try {
@@ -136,7 +170,7 @@ When the student asks something, always reason from their real data above.
           messages: [
             { 
               role: "system", 
-              content: "You are an insight extractor. From the mentor's advice, create one short, inspiring, personal discovery about the student (maximum 70 characters). Make it feel like a real hidden pattern." 
+              content: "You are an insight extractor. From the mentor's advice, create one short, inspiring discovery about the student (maximum 70 characters)." 
             },
             { role: "user", content: fullResponse }
           ],
