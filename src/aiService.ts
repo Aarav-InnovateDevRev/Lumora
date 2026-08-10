@@ -157,35 +157,54 @@ ${discoveriesText}
 
     // ==================== 6. GENERATE SHORT INSIGHT ====================
 
-    let shortInsight = "";
-    try {
-      const insightResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "llama-3.1-8b-instant",
-          messages: [
-            { 
-              role: "system", 
-              content: "You are an insight extractor. From the mentor's advice, create one short, inspiring discovery about the student (maximum 70 characters)." 
-            },
-            { role: "user", content: fullResponse }
-          ],
-          temperature: 0.6,
-          max_tokens: 60
-        })
-      });
+    // ==================== GENERATE HIDDEN DISCOVERY ====================
+let shortInsight = "";
+try {
+  const insightResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${GROQ_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: "llama-3.1-8b-instant",
+      messages: [
+        { 
+          role: "system", 
+          content: `You are a pattern detector for a student growth app.
 
-      if (insightResponse.ok) {
-        const insightData = await insightResponse.json();
-        shortInsight = insightData.choices[0]?.message?.content?.trim() || "";
-      }
-    } catch (e) {
-      console.error("Insight generation failed:", e);
-    }
+First, look for something real and useful:
+- A clear change in mood, confidence, or consistency
+- A risk (burnout, low energy, dropping streak)
+- A positive emerging pattern
+- Something important the student should know
+
+Rules:
+- Maximum 75 characters
+- Be specific and honest
+- If you find a real pattern or risk → write that
+- If nothing important is found → write one short, meaningful quote related to growth or consistency
+- Never return empty`
+        },
+        { 
+          role: "user", 
+          content: `Based on this mentor response and student context, create one Hidden Discovery:\n\n${fullResponse}` 
+        }
+      ],
+      temperature: 0.55,
+      max_tokens: 60
+    })
+  });
+
+  if (insightResponse.ok) {
+    const insightData = await insightResponse.json();
+    shortInsight = insightData.choices[0]?.message?.content?.trim() || "Small consistent actions create big change.";
+  }
+} catch (e) {
+  console.error("Insight generation failed:", e);
+  shortInsight = "Small consistent actions create big change.";
+}
+  
 
     return { 
       response: fullResponse, 
