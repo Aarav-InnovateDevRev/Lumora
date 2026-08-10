@@ -1277,9 +1277,6 @@ Rules:
                         <option value="Medium">Medium</option>
                         <option value="Low">Low</option>
                       </select>
-                      <textarea placeholder="Wins today" value={reflection.wins} onChange={e => setReflection(p => ({...p, wins: e.target.value}))} style={{ ...inputStyle, height: '90px', resize: 'vertical' }} />
-                      <textarea placeholder="Struggles" value={reflection.struggles} onChange={e => setReflection(p => ({...p, struggles: e.target.value}))} style={{ ...inputStyle, height: '90px', resize: 'vertical' }} />
-                      <button onClick={saveReflection} style={buttonStyle}>Save Reflection</button>
                       <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, marginTop: '8px' }}>
                       What do you want to do tomorrow?
                       </label>
@@ -1289,6 +1286,10 @@ Rules:
                       onChange={e => setReflection(p => ({ ...p, tomorrowIntention: e.target.value }))}
                       style={{ ...inputStyle, height: '80px', resize: 'vertical' }}
                      />
+                      <textarea placeholder="Wins today" value={reflection.wins} onChange={e => setReflection(p => ({...p, wins: e.target.value}))} style={{ ...inputStyle, height: '90px', resize: 'vertical' }} />
+                      <textarea placeholder="Struggles" value={reflection.struggles} onChange={e => setReflection(p => ({...p, struggles: e.target.value}))} style={{ ...inputStyle, height: '90px', resize: 'vertical' }} />
+                      <button onClick={saveReflection} style={buttonStyle}>Save Reflection</button>
+                      
                     </div>
                   </div>
                 )}
