@@ -17,8 +17,14 @@ function App() {
   });
 
   const [reflection, setReflection] = useState({
-    studyHours: "", subjects: "", mood: "Good", confidence: "Medium", wins: "", struggles: "",
-  });
+  studyHours: "", 
+  subjects: "", 
+  mood: "Good", 
+  confidence: "Medium", 
+  wins: "", 
+  struggles: "",
+  tomorrowIntention: ""
+});
 
   const [hiddenDiscoveries, setHiddenDiscoveries] = useState<string[]>(["You started your growth journey 🌱"]);
 
@@ -464,15 +470,17 @@ const calculateTrajectory = () => {
     localStorage.setItem('lastReflectionDate', today);
 
     const { error: reflectionError } = await supabase.from('daily_reflections').insert([{
-      user_id: user.id,
-      date: today,
-      study_hours: parseFloat(reflection.studyHours) || 0,
-      subjects: reflection.subjects.split(',').map(s => s.trim()),
-      mood: reflection.mood,
-      confidence: reflection.confidence,
-      wins: reflection.wins,
-      struggles: reflection.struggles
-    }]);
+  user_id: user.id,
+  date: today,
+  study_hours: parseFloat(reflection.studyHours) || 0,
+  subjects: reflection.subjects.split(',').map(s => s.trim()),
+  mood: reflection.mood,
+  confidence: reflection.confidence,
+  wins: reflection.wins,
+  struggles: reflection.struggles,
+  tomorrow_intention: reflection.tomorrowIntention || null,
+  intention_completed: false
+}]);
 
     if (reflectionError) {
       alert(`Reflection Error: ${reflectionError.message}`);
@@ -1118,6 +1126,15 @@ Rules:
                       <textarea placeholder="Wins today" value={reflection.wins} onChange={e => setReflection(p => ({...p, wins: e.target.value}))} style={{ ...inputStyle, height: '90px', resize: 'vertical' }} />
                       <textarea placeholder="Struggles" value={reflection.struggles} onChange={e => setReflection(p => ({...p, struggles: e.target.value}))} style={{ ...inputStyle, height: '90px', resize: 'vertical' }} />
                       <button onClick={saveReflection} style={buttonStyle}>Save Reflection</button>
+                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, marginTop: '8px' }}>
+                      What do you want to do tomorrow?
+                      </label>
+                      <textarea
+                      placeholder="Example: Finish Physics chapter, revise notes, sleep by 11 PM..."
+                      value={reflection.tomorrowIntention}
+                      onChange={e => setReflection(p => ({ ...p, tomorrowIntention: e.target.value }))}
+                      style={{ ...inputStyle, height: '80px', resize: 'vertical' }}
+                     />
                     </div>
                   </div>
                 )}
