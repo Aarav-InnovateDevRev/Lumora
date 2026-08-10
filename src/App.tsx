@@ -25,6 +25,7 @@ function App() {
   struggles: "",
   tomorrowIntention: ""
 });
+  const [yesterdayIntention, setYesterdayIntention] = useState<any>(null);
 
   const [hiddenDiscoveries, setHiddenDiscoveries] = useState<string[]>(["You started your growth journey 🌱"]);
 
@@ -181,6 +182,9 @@ function App() {
     if ((currentPage === 'stats' || currentPage === 'mirror' || currentPage === 'dashboard') && user.id) {
       fetchStatsData();
     }
+    if ((currentPage === 'reflection' || currentPage === 'dashboard') && user.id) {
+    loadYesterdayIntention();
+    }
     if (currentPage === 'career' && user.id) {
       loadCareerTimeline();
     }
@@ -201,6 +205,44 @@ function App() {
     }
     setStatsLoading(false);
   };
+
+  // ==================== LOAD YESTERDAY INTENTION ====================
+const loadYesterdayIntention = async () => {
+  if (!user.id) return;
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+  const { data } = await supabase
+    .from('daily_reflections')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('date', yesterdayStr)
+    .single();
+
+  if (data && data.tomorrow_intention && !data.intention_completed) {
+    setYesterdayIntention(data);
+  } else {
+    setYesterdayIntention(null);
+  }
+};
+
+const markIntentionCompleted = async (completed: boolean) => {
+  if (!yesterdayIntention) return;
+
+  await supabase
+    .from('daily_reflections')
+    .update({ intention_completed: completed })
+    .eq('id', yesterdayIntention.id);
+
+  setYesterdayIntention(null);
+
+  if (completed) {
+    await addSeeds(5, "Completed yesterday's intention");
+    alert("Great! +5 Seeds for following through.");
+  }
+};
 
   // ==================== DAILY / WEEKLY PLANNER ====================
 const generateWeeklyPlan = async () => {
@@ -987,6 +1029,79 @@ Rules:
                         <p style={{ fontSize: '42px', fontWeight: 'bold', color: colors.primary }}>{user.seeds}</p>
                       </div>
                     </div>
+                    {/* ===== ACCOUNTABILITY CHECKLIST ===== */}
+{(yesterdayIntention || careerSteps.length > 0) && (
+  <div style={{ ...cardStyle, marginBottom: '32px' }}>
+    <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.primary, marginBottom: '16px' }}>
+      Today's Accountability
+    </h2>
+
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Yesterday Intention */}
+      {yesterdayIntention && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          background: '#fff7ed',
+          borderRadius: '12px'
+        }}>
+          <div>
+            <p style={{ fontSize: '13px', color: '#6b7280' }}>Yesterday's Intention</p>
+            <p style={{ fontWeight: 500, color: colors.text }}>{yesterdayIntention.tomorrow_intention}</p>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => markIntentionCompleted(true)}
+              style={{
+                padding: '6px 12px',
+                background: colors.accent,
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '13px',
+                cursor: 'pointer'
+              }}
+            >
+              Done
+            </button>
+            <button
+              onClick={() => markIntentionCompleted(false)}
+              style={{
+                padding: '6px 12px',
+                background: 'white',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '13px',
+                cursor: 'pointer'
+              }}
+            >
+              Skip
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Latest Career Task */}
+      {careerSteps.length > 0 && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          background: '#f0f9ff',
+          borderRadius: '12px'
+        }}>
+          <div>
+            <p style={{ fontSize: '13px', color: '#6b7280' }}>Latest Career Task</p>
+            <p style={{ fontWeight: 500, color: colors.text }}>{careerSteps[0].step_text}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
                     <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.text, marginBottom: '16px' }}>Hidden Discoveries</h2>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {hiddenDiscoveries.map((d, i) => (
@@ -1103,6 +1218,45 @@ Rules:
                 )}
 
                 {/* REFLECTION */}
+                {yesterdayIntention && (
+  <div style={{ ...cardStyle, marginBottom: '24px', border: '2px solid #fed7aa' }}>
+    <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: colors.primary, marginBottom: '10px' }}>
+      Did you complete yesterday’s intention?
+    </h3>
+    <p style={{ color: colors.text, marginBottom: '16px', lineHeight: 1.5 }}>
+      “{yesterdayIntention.tomorrow_intention}”
+    </p>
+    <div style={{ display: 'flex', gap: '12px' }}>
+      <button
+        onClick={() => markIntentionCompleted(true)}
+        style={{
+          padding: '10px 20px',
+          background: colors.accent,
+          color: 'white',
+          border: 'none',
+          borderRadius: '10px',
+          fontWeight: 600,
+          cursor: 'pointer'
+        }}
+      >
+        Yes, I did it
+      </button>
+      <button
+        onClick={() => markIntentionCompleted(false)}
+        style={{
+          padding: '10px 20px',
+          background: 'white',
+          color: colors.text,
+          border: '1px solid #e5e7eb',
+          borderRadius: '10px',
+          cursor: 'pointer'
+        }}
+      >
+        Not yet
+      </button>
+    </div>
+  </div>
+)}
                 {currentPage === 'reflection' && (
                   <div style={{ maxWidth: '640px', margin: '0 auto' }}>
                     <div style={{ ...cardStyle, padding: '36px' }}>
