@@ -155,9 +155,9 @@ ${discoveriesText}
     const data = await response.json();
     const fullResponse = data.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
 
-    // ==================== 6. GENERATE SHORT INSIGHT ====================
 
-    // ==================== GENERATE HIDDEN DISCOVERY ====================
+
+    // ==================== 6. GENERATE HIDDEN DISCOVERY ====================
 let shortInsight = "";
 try {
   const insightResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
