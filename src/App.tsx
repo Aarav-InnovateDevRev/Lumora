@@ -27,6 +27,9 @@ function App() {
 });
   const [yesterdayIntention, setYesterdayIntention] = useState<any>(null);
 
+  const [weeklyReport, setWeeklyReport] = useState("");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
   const [hiddenDiscoveries, setHiddenDiscoveries] = useState<string[]>(["You started your growth journey 🌱"]);
 
   const [userMessage, setUserMessage] = useState("");
@@ -292,6 +295,55 @@ Keep the total response under 120 words.`;
   }
 
   setIsGeneratingPlan(false);
+};
+
+// ==================== WEEKLY GROWTH REPORT ====================
+const generateWeeklyReport = async () => {
+  if (!user.id) return;
+  setIsGeneratingReport(true);
+  setWeeklyReport("");
+
+  try {
+    const trajectory = calculateTrajectory();
+
+    const prompt = `You are Lumora's Weekly Growth Reporter.
+
+Student: ${user.name}
+Goal: ${user.goal}
+Class: ${user.class}
+Current Streak: ${user.streak}
+Total Seeds: ${user.seeds}
+
+Current Trajectory:
+- Study Consistency: ${trajectory.studyConsistency}/100
+- Skill Growth: ${trajectory.skillGrowth}/100
+- Energy: ${trajectory.energy}/100
+- Goal Alignment: ${trajectory.goalAlignment}/100
+- Burnout Risk: ${trajectory.burnoutRisk}/100
+
+Write a short and honest Weekly Growth Report.
+
+Structure it exactly like this:
+
+What Improved:
+(1-2 sentences)
+
+What Needs Attention:
+(1-2 sentences)
+
+One Recommendation:
+(One clear, practical action for the coming week)
+
+Keep the whole report under 130 words. Be warm, specific and useful.`;
+
+    const result = await getAIMentorResponse(user, prompt);
+    setWeeklyReport(result.response);
+
+  } catch (error) {
+    setWeeklyReport("Could not generate the report right now. Please try again.");
+  }
+
+  setIsGeneratingReport(false);
 };
 
   // ==================== POMODORO ====================
@@ -1102,6 +1154,54 @@ Rules:
     </div>
   </div>
 )}
+
+{/* ===== WEEKLY GROWTH REPORT ===== */}
+<div style={{ ...cardStyle, marginBottom: '32px' }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+    <div>
+      <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: colors.primary }}>
+        📈 Weekly Growth Report
+      </h2>
+      <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+        AI summary of your recent patterns
+      </p>
+    </div>
+    <button
+      onClick={generateWeeklyReport}
+      disabled={isGeneratingReport}
+      style={{
+        padding: '10px 18px',
+        background: isGeneratingReport ? '#fdba74' : colors.accent,
+        color: 'white',
+        border: 'none',
+        borderRadius: '12px',
+        fontWeight: 600,
+        fontSize: '14px',
+        cursor: isGeneratingReport ? 'not-allowed' : 'pointer'
+      }}
+    >
+      {isGeneratingReport ? "Generating..." : "Generate Report"}
+    </button>
+  </div>
+
+  {weeklyReport ? (
+    <div style={{
+      background: '#fff7ed',
+      borderRadius: '14px',
+      padding: '18px 20px',
+      whiteSpace: 'pre-wrap',
+      lineHeight: 1.7,
+      color: colors.text,
+      fontSize: '15px'
+    }}>
+      {weeklyReport}
+    </div>
+  ) : (
+    <p style={{ color: '#9ca3af', fontSize: '14px' }}>
+      Click the button to generate your personalized weekly report.
+    </p>
+  )}
+</div>
                     <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: colors.text, marginBottom: '16px' }}>Hidden Discoveries</h2>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {hiddenDiscoveries.map((d, i) => (
