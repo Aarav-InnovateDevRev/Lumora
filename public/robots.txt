@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://lumora-tan-eight.vercel.app/sitemap.xml
