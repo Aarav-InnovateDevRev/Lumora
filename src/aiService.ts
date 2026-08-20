@@ -124,7 +124,15 @@ ${discoveriesText}
 - Keep responses clear (max 180 words)
 `;
 
-    // ==================== 5. CALL GROQ ====================
+        // ==================== 5. CALL GROQ ====================
+
+    // Detect special long-form requests (report / future glimpse)
+    const isLongForm =
+      userMessage.toLowerCase().includes("weekly growth report") ||
+      userMessage.toLowerCase().includes("future glimpse") ||
+      userMessage.toLowerCase().includes("future vision") ||
+      userMessage.toLowerCase().includes("what improved") ||
+      userMessage.toLowerCase().includes("one recommendation");
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -135,43 +143,56 @@ ${discoveriesText}
       body: JSON.stringify({
         model: "openai/gpt-oss-20b",
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage || "Give me personalized growth advice based on my current trajectory." }
+          {
+            role: "system",
+            content: isLongForm
+              ? systemPrompt.replace(
+                  "Keep responses clear (max 180 words)",
+                  "For reports and future glimpses, follow the requested structure fully. Do not cut sections short."
+                )
+              : systemPrompt
+          },
+          {
+            role: "user",
+            content: userMessage || "Give me personalized growth advice based on my current trajectory."
+          }
         ],
         temperature: 0.7,
-        max_tokens: 450
+        max_tokens: isLongForm ? 900 : 500
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Groq Error:", errorText);
-      return { 
-        response: `Sorry, I'm having trouble connecting right now (Error ${response.status}). Please try again.`, 
-        insight: "" 
+      return {
+        response: `Sorry, I'm having trouble connecting right now (Error ${response.status}). Please try again in a few seconds.`,
+        insight: ""
       };
     }
 
     const data = await response.json();
-    const fullResponse = data.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
+    const fullResponse =
+      data.choices[0]?.message?.content ||
+      "I couldn't generate a response. Please try again.";
 
+    // ==================== 6. HIDDEN DISCOVERY (skip on long-form to save rate limit) ====================
+    let shortInsight = "";
 
-
-    // ==================== 6. GENERATE HIDDEN DISCOVERY ====================
-let shortInsight = "";
-try {
-  const insightResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${GROQ_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: "openai/gpt-oss-20b",
-      messages: [
-        { 
-          role: "system", 
-          content: `You are a pattern detector for a student growth app.
+    if (!isLongForm) {
+      try {
+        const insightResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-oss-20b",
+            messages: [
+              {
+                role: "system",
+                content: `You are a pattern detector for a student growth app.
 
 First, look for something real and useful:
 - A clear change in mood, confidence, or consistency
@@ -185,31 +206,35 @@ Rules:
 - If you find a real pattern or risk → write that
 - If nothing important is found → write one short, meaningful quote related to growth or consistency
 - Never return empty`
-        },
-        { 
-          role: "user", 
-          content: `Based on this mentor response and student context, create one Hidden Discovery:\n\n${fullResponse}` 
+              },
+              {
+                role: "user",
+                content: `Based on this mentor response and student context, create one Hidden Discovery:\n\n${fullResponse}`
+              }
+            ],
+            temperature: 0.55,
+            max_tokens: 60
+          })
+        });
+
+        if (insightResponse.ok) {
+          const insightData = await insightResponse.json();
+          shortInsight =
+            insightData.choices[0]?.message?.content?.trim() ||
+            "Small consistent actions create big change.";
         }
-      ],
-      temperature: 0.55,
-      max_tokens: 60
-    })
-  });
+      } catch (e) {
+        console.error("Insight generation failed:", e);
+        shortInsight = "Small consistent actions create big change.";
+      }
+    }
 
-  if (insightResponse.ok) {
-    const insightData = await insightResponse.json();
-    shortInsight = insightData.choices[0]?.message?.content?.trim() || "Small consistent actions create big change.";
-  }
-} catch (e) {
-  console.error("Insight generation failed:", e);
-  shortInsight = "Small consistent actions create big change.";
-}
-  
-
-    return { 
-      response: fullResponse, 
-      insight: shortInsight 
+    return {
+      response: fullResponse,
+      insight: shortInsight
     };
+
+ 
 
   } catch (error) {
     console.error("AI Error:", error);
