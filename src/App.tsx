@@ -161,7 +161,7 @@ function App() {
           .from('growth_profile')
           .select('current_streak, total_seeds')
           .eq('user_id', savedUser.id)
-          .single();
+          .maybeSingle();
 
         const updatedUser = {
           ...savedUser,
@@ -222,7 +222,7 @@ const loadYesterdayIntention = async () => {
     .select('*')
     .eq('user_id', user.id)
     .eq('date', yesterdayStr)
-    .single();
+    .maybeSingle();
 
   if (data && data.tomorrow_intention && !data.intention_completed) {
     setYesterdayIntention(data);
@@ -472,7 +472,7 @@ const calculateTrajectory = () => {
   // ==================== LOGIN ====================
   const handleLogin = async () => {
     setLoginError("");
-    const { data, error } = await supabase.from('users').select('*').eq('id', loginId).single();
+    const { data, error } = await supabase.from('users').select('*').eq('id', loginId).maybeSingle();
 
     if (error || !data) {
       setLoginError("Invalid User ID");
@@ -484,7 +484,7 @@ const calculateTrajectory = () => {
       return;
     }
 
-    const { data: profile } = await supabase.from('growth_profile').select('*').eq('user_id', loginId).single();
+    const { data: profile } = await supabase.from('growth_profile').select('*').eq('user_id', loginId).maybeSingle();
 
     if (!profile) {
       await supabase.from('growth_profile').insert([{
@@ -590,7 +590,7 @@ const calculateTrajectory = () => {
       .from('growth_profile')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (existingProfile) {
       await supabase

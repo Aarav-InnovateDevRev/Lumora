@@ -158,7 +158,7 @@ ${discoveriesText}
           }
         ],
         temperature: 0.7,
-        max_tokens: isLongForm ? 900 : 500
+        max_tokens: isLongForm ? 1100 : 500
       })
     });
 
