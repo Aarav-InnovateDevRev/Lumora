@@ -1,313 +1,122 @@
-# Lumora
+# AuraTrack
 
-**Make Invisible Progress Visible**
+**Make invisible progress visible.**
 
-AI-Powered Personal Growth Companion for Students
+AuraTrack is an AI growth companion for students who work hard but struggle to see whether they are actually improving.
 
-**Live Demo:** https://lumora-tan-eight.vercel.app  
-**GitHub:** https://github.com/Aarav-InnovateDevRev/Lumora  
-**Team:** Aarav • Akshat • Shashi • Jingle  
-**Competition:** InnoNATION Odyssey Senior 2026
+Most study tools track tasks.  
+AuraTrack tracks the person behind the tasks.
 
----
-
-## The Problem
-
-Students work hard for weeks and still feel like nothing has changed.
-
-They study. They struggle. They improve.  
-But most of the time, they never actually see the change.
-
-When progress stays invisible, it becomes easy to believe there is none.
-
-Generic productivity apps primarily track tasks and completion, while general-purpose chatbots are designed for broad conversations rather than longitudinal student growth.
-
-Lumora is purpose-built around the student's evolving reflection history, goals, behavioural signals and growth patterns.
-
-**Lumora was built to answer one question:**  
-What if technology could make that invisible progress visible?
+Live product: https://lumora-tan-eight.vercel.app
 
 ---
 
-## The Solution — The Mirror of Progress
+## The problem
 
-Lumora is an AI Growth Agent that treats every student as a unique individual.
+Students can study for weeks and still feel stuck.
 
-It builds a deep, evolving profile through daily reflections, streak tracking, and hidden pattern discovery — then uses that knowledge to deliver truly personalized guidance.
+They log hours. They finish worksheets. They stay busy.  
+But they rarely get a clear signal of real growth.
 
-Instead of acting as another chatbot, Lumora continuously analyses reflections, streaks and progress history to generate meaningful insights that would otherwise require months of observation by a human mentor.
-
-A single day tells almost nothing.  
-A journey tells you who you are becoming.
-
-That journey becomes the **Mirror of Progress**.
-
-> Chatbots remember conversations.  
-> Lumora remembers people.
+When progress stays invisible, motivation collapses.
 
 ---
 
-## The Thinking Behind Lumora
+## The product
 
-Lumora was designed by combining ideas observed in platforms and experiences that successfully keep people engaged.
+AuraTrack turns daily student signals into a living growth profile.
 
-- **Sports** inspired curiosity, uncertainty and the feeling of being part of a journey.
-- **Duolingo** inspired streaks, rewards and consistent engagement.
-- **Notion** inspired the idea of bringing scattered information into one organized personal system.
+Students reflect on:
+- focus hours
+- mood
+- confidence
+- wins
+- struggles
+- tomorrow’s intention
 
-Lumora combines these principles with AI and longitudinal reflection data:
+AuraTrack then builds:
+- streak and consistency memory
+- trajectory insights
+- hidden pattern detection
+- personalized AI mentoring
+- weekly growth reports
+- future-glimpse projections
 
-**Curiosity + Personalization + Gamification + Memory → Personal Growth**
+The core idea is simple:
 
-The goal is not to make students use another productivity app.
-
-The goal is to make their own growth interesting enough to keep discovering.
-
----
-
-## How It Works
-
-Student Reflection  
-→ Long-term Memory (Supabase)  
-→ Pattern Analysis + Trajectory  
-→ AI Reasoning (Groq / Llama 3.1)  
-→ What the student sees in the Mirror
-
-The AI does not work from one isolated conversation.  
-It works from the student’s accumulated reflection history and growth context.
+> A single day tells you almost nothing.  
+> A journey tells you who you are becoming.
 
 ---
 
-## The Retention Loop
+## Why this is different
 
-Lumora is designed around a simple cycle:
+Most AI education tools are chatbots.  
+They answer questions and forget the student.
 
-**Reflect → Discover → Act → Return → Grow**
+AuraTrack is built around long-term memory:
+- reflection history
+- behavioral patterns
+- energy and burnout signals
+- goal alignment over time
 
-Students return not only because of reminders or streaks, but because their accumulated history creates new discoveries, personalized insights, progress changes and future possibilities.
-
-The more meaningful the journey becomes, the more valuable the next interaction can become.
-
-> **We don't want students to return because they have to. We want them to return because they are curious about themselves.**
-
----
-
-## Key Features
-
-### 1. Personalized Onboarding & Profile
-- Unique User ID + Password
-- Deep profile (study feelings, goals, learning style)
-
-### 2. Daily Reflection System + Gamification
-- Mood, confidence, wins, struggles, hours studied
-- Tomorrow Intention with next-day accountability
-- Streak & Seeds reward system
-- Data stored in Supabase for long-term pattern analysis
-
-### 3. AI Growth Mentor
-- Uses Groq (Llama 3.1) + real student data from Supabase
-- Remembers reflections, streaks, goals and discoveries
-- Gives actionable, personalized advice
-- Daily message limit (10) for healthy usage
-- Becomes more accurate as the student’s data grows
-
-### 4. Hidden Discoveries & Pattern Engine
-- AI automatically finds real patterns and risks from reflections
-- Stores discoveries in the database and shows them on the dashboard
-- Transforms raw data into meaningful guidance
-
-### 5. Current Trajectory
-- Visual view of Study Consistency, Skill Growth, Energy, Goal Alignment and Burnout Risk
-- Built from real recent reflection data
-
-### 6. Mirror of You
-- Current You summary
-- Future Glimpse (trajectory-based projection)
-- Growth Journey timeline
-- Hidden Discoveries
-
-### 7. Weekly Growth Report
-- AI summary of what improved
-- What needs attention
-- One clear recommendation for the coming week
-
-### 8. Career Roadmap
-- Personalized career direction analysis
-- Daily career steps with history awareness
-- Goal update suggestions when patterns indicate a better fit
-
-### 9. Weekly Planner
-- Light, realistic AI-generated weekly tasks based on student goals and data
-
-### 10. Focus Timer (Pomodoro)
-- Classic 25 + 5 focus sessions
-- Seeds awarded on completion
-
-### 11. Study Reels
-- Curated educational short-form content
-- Soft limit with accountability message
-
-### 12. AR Growth Tree
-- Real front-camera AR filter with animated tree
-- Visual representation of growth in the real world
+It does not just respond.  
+It remembers.
 
 ---
 
-## Alignment with InnoNATION Odyssey Senior Criteria
+## Core features
 
-### Innovation & Originality
-Most student apps focus on productivity or content delivery.  
-Lumora focuses on identity and progress visibility.  
-It treats growth as a longitudinal story, not a daily checklist.  
-The core idea — Mirror of Progress — turns forgotten daily signals into a visible trajectory of who the student is becoming.
-
-### Practicality & Feasibility
-Lumora is not only a concept. It is a working product with:
-- Live deployment on Vercel
-- Real authentication and data storage
-- Functional AI mentor, reflection system, trajectory, reports and career guidance
-
-A student can enter, reflect, receive guidance, and see their progress today.
-
-### Technological Integration
-- Frontend: React + TypeScript + Vite
-- Database & Auth: Supabase (PostgreSQL)
-- AI: Groq (Llama 3.1) with rich personal context
-- Visualization: Recharts
-- Architecture: Reflection → Memory → Pattern Analysis → AI → Mirror
-
-### Business Viability
-Lumora starts with the individual student, then expands outward:
-
-1. Lumora (Student) – Personal growth companion  
-2. Lumora Office – Team / manager layer for schools and organizations  
-
-This creates a natural path from one student → classrooms → institutions, while keeping the personal growth experience at the centre.
-
-### Business & Market Direction
-
-Lumora follows a **freemium B2C model** to keep its core experience accessible to students, with premium features providing deeper analysis, enhanced AI usage and advanced experiences.
-
-The longer-term model expands through **school and institutional partnerships**, while Lumora Office opens a professional/team market.
-
-Our initial customer acquisition approach focuses on low-cost channels such as **school workshops, student communities and social media**, allowing the product to validate retention and demand before significant advertising expenditure.
-
-**Student → Classroom → Institution → Professional Team**
-
-For the detailed market sizing, business model, TAM/SAM/SOM and growth strategy:
-
-**Business & Market Presentation:**  
-https://canva.link/m397ejbcueq37cr
-
-## Lumora Office — Expanding the Growth Intelligence Layer
-
-**Lumora Office:** https://lumora-office.vercel.app  
-**Repository:** https://github.com/Aarav-InnovateDevRev/Lumora-Office
-
-Lumora Office extends the same philosophy from students to **employees and managers**.
-
-Instead of focusing only on tasks and output, it helps make patterns of growth, consistency, energy and engagement more visible.
-
-### Employee
-- Daily reflection
-- Tomorrow Intention
-- AI Growth Mentor
-- Current Trajectory
+- Daily reflection + accountability
+- Tomorrow Intention system
+- AI Growth Mentor with real student context
+- Current trajectory (consistency, energy, goal alignment, burnout risk)
+- Mirror of You (current self + future glimpse + growth journey)
 - Weekly Growth Report
-- Focus tools and growth tracking
-
-### Manager
-- Team Code system
-- Team overview
-- Engagement and consistency signals
-- High-level visibility into team health
-- Reduced need for repetitive status checking
-
-The core principle remains the same:
-
-> **Make invisible progress visible — for both the individual and the organization.**
-
-Lumora Office demonstrates how the same growth-intelligence foundation can expand from:
-
-**Student → School → Organization**
-
-### Social Impact
-Many students do not stop because they lack ability.  
-Sometimes they stop because they cannot see their own progress.
-
-If progress becomes visible, a student is more likely to believe in the next step.
-
-Lumora exists for the student who thinks they are not improving — when they actually are.
+- Career roadmap and daily steps
+- Focus timer, planner, and motivation loops
 
 ---
 
-## Tech Stack
+## Who it is for
 
-- Frontend: React + Vite + TypeScript
-- Backend / Database: Supabase (Auth, PostgreSQL, RLS)
-- AI: Groq (Llama 3.1) with personalized context
-- AR: WebRTC Camera + CSS Overlay
-- Charts: Recharts
-- Deployment: Vercel
-
-Architecture:  
-React Components → Supabase Database → AI Context Engine → Groq (Llama 3.1) → Personalized Guidance → AR Visualization
+- School and high-school students
+- Self-driven learners preparing for exams or skill growth
+- Anyone who needs proof that consistency is compounding
 
 ---
 
-## Why Lumora Is Different
+## Business direction
 
-Lumora builds a continuously evolving understanding of every student through:
+AuraTrack starts with the individual student, then expands outward:
 
-- Long-term reflection history
-- Hidden Discoveries
-- Streak-based behavioural analysis
-- Personal goals
-- Emotional trends
-- Growth milestones
+1. **AuraTrack** – personal growth companion  
+2. **VelosTrack** – team/manager layer for institutions and workplaces
 
-Instead of answering one question well, Lumora continuously improves its understanding of the student and delivers increasingly personalised guidance.
+This creates a path from one learner → classrooms → organizations.
 
 ---
 
-## Privacy & Responsible AI
+## Tech
 
-Lumora is built around the idea that personal growth data deserves trust.
-
-The current MVP uses authenticated user accounts and structured personal data in Supabase. Future development will continue strengthening:
-
-- Data privacy and access controls
-- Secure handling of reflection history
-- AI safety and evaluation
-- Protection against incorrect or harmful AI guidance
-
-Lumora's AI-generated insights are intended as guidance, not guaranteed predictions or professional diagnoses.
+- React + TypeScript + Vite
+- Supabase (auth + database)
+- Groq AI
+- Recharts
+- Vercel
 
 ---
 
-## Future Roadmap
+## Status
 
-- Advanced analytics dashboard
-- Real leaderboard & school competitions
-- Seeds marketplace
-- Predictive habit analysis using long-term data
-- Full WebXR 3D AR tree
-- Parent / Teacher dashboard
-- Deeper integration with Lumora Office for institutions
+Working product with live deployment and active usage flows.
+
+Built by a student team that cares more about real growth than vanity productivity metrics.
 
 ---
 
-## Competition Alignment Note
+## Contact
 
-Lumora was developed with the InnoNATION Odyssey Senior 2026 prompt as a core reference.
-
-Specific concepts and lines in this README may directly reflect or closely align with terminology from the official prompt to make our alignment explicit for evaluators. Such prompt-derived wording is intentionally distinguished from our original product concepts and implementation.
-
----
-
-## How to Run Locally
-
-```bash
-git clone https://github.com/Aarav-InnovateDevRev/Lumora.git
-cd Lumora
-npm install
+Team AuraTrack  
+Phone no. - +91 8285757406
+Product: https://lumora-tan-eight.vercel.app
