@@ -4,7 +4,23 @@ import { getAIMentorResponse } from './aiService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'login' | 'onboarding' | 'dashboard' | 'reflection' | 'ai' | 'tree' | 'career' | 'pomodoro' | 'leaderboard' | 'stats' | 'mirror' | 'reels' | 'planner'>('login');
+  const [currentPage, setCurrentPage] = useState<
+  | 'login'
+  | 'onboarding'
+  | 'dashboard'
+  | 'reflection'
+  | 'ai'
+  | 'stats'
+  | 'mirror'
+  | 'pomodoro'
+  | 'planner'
+  | 'profile'
+  | 'team'
+  | 'career'
+  | 'leaderboard'
+  | 'reels'
+  | 'tree'
+>('login');
   
   const [loginId, setLoginId] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -522,6 +538,45 @@ const handleLogin = async () => {
     setCurrentPage('dashboard');
   };
 
+  const handleLogout = () => {
+  setUser({
+    id: "",
+    name: "",
+    class: "",
+    goal: "",
+    preferredTone: "Friendly",
+    studentType: "Student",
+    studyFeeling: "Focused",
+    password: "",
+    streak: 0,
+    seeds: 0
+  });
+  setLoginId("");
+  setLoginPassword("");
+  setCurrentPage('login');
+};
+
+const saveProfile = async () => {
+  if (!user.id) return;
+
+  const { error } = await supabase
+    .from('users')
+    .update({
+      name: user.name,
+      class: user.class,
+      goal: user.goal,
+      study_feeling: user.studyFeeling
+    })
+    .eq('id', user.id);
+
+  if (error) {
+    alert("Could not save profile");
+    return;
+  }
+
+  alert("Profile updated");
+};
+
   // ==================== ONBOARDING ====================
 const finishOnboarding = async () => {
   if (!user.id || !user.name || !user.password) {
@@ -896,6 +951,7 @@ Rules:
     { id: 'dashboard' as const, label: 'Dashboard', icon: '🏠' },
     { id: 'mirror' as const, label: 'Mirror', icon: '🪞' },
     { id: 'reflection' as const, label: 'Reflection', icon: '📝' },
+    { id: 'profile' as const, label: 'Profile', icon: '👤' },
     { id: 'ai' as const, label: 'AI Mentor', icon: '🤖' },
     { id: 'stats' as const, label: 'Stats', icon: '📊' },
     { id: 'pomodoro' as const, label: 'Pomodoro', icon: '⏱️' },
@@ -1664,6 +1720,73 @@ Rules:
         </div>
       </div>
     )}
+  </div>
+)}
+
+{currentPage === 'profile' && (
+  <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary, marginBottom: '8px' }}>
+      👤 Profile
+    </h1>
+    <p style={{ color: '#64748b', marginBottom: '24px' }}>
+      Update your details or log out
+    </p>
+
+    <div style={{ ...cardStyle, padding: '28px' }}>
+      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>User ID</label>
+      <input value={user.id} disabled style={{ ...inputStyle, opacity: 0.7 }} />
+
+      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Name</label>
+      <input
+        value={user.name}
+        onChange={e => setUser(p => ({ ...p, name: e.target.value }))}
+        style={inputStyle}
+      />
+
+      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Class / Role</label>
+      <input
+        value={user.class}
+        onChange={e => setUser(p => ({ ...p, class: e.target.value }))}
+        style={inputStyle}
+      />
+
+      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Goal</label>
+      <input
+        value={user.goal}
+        onChange={e => setUser(p => ({ ...p, goal: e.target.value }))}
+        style={inputStyle}
+      />
+
+      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Usual Feeling</label>
+      <select
+        value={user.studyFeeling}
+        onChange={e => setUser(p => ({ ...p, studyFeeling: e.target.value }))}
+        style={inputStyle}
+      >
+        <option value="Focused">Focused</option>
+        <option value="Motivated">Motivated</option>
+        <option value="Stressed">Stressed</option>
+        <option value="Tired">Tired</option>
+        <option value="Overwhelmed">Overwhelmed</option>
+      </select>
+
+      <button onClick={saveProfile} style={buttonStyle}>
+        Save Profile
+      </button>
+
+      <button
+        onClick={handleLogout}
+        style={{
+          ...buttonStyle,
+          background: 'white',
+          color: '#dc2626',
+          border: '1px solid #fecaca',
+          marginTop: '12px'
+        }}
+      >
+        Log Out
+      </button>
+    </div>
   </div>
 )}
 
