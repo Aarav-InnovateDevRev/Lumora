@@ -151,7 +151,7 @@ function App() {
   // ==================== LOAD USER ====================
   useEffect(() => {
     const loadUserProperly = async () => {
-      const saved = localStorage.getItem('lumoraUser');
+      const saved = localStorage.getItem('AuraTrackUser');
       if (!saved) return;
 
       const savedUser = JSON.parse(saved);
@@ -170,7 +170,7 @@ function App() {
         };
 
         setUser(updatedUser);
-        localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+        localStorage.setItem('AuraTrackUser', JSON.stringify(updatedUser));
         setCurrentPage('dashboard');
       } catch (err) {
         setUser(savedUser);
@@ -256,7 +256,7 @@ const generateWeeklyPlan = async () => {
   try {
     const trajectory = calculateTrajectory();
 
-    const prompt = `You are Lumora's Weekly Planner.
+    const prompt = `You are AuraTrack's Weekly Planner.
 
 Student Goal: ${user.goal}
 Class: ${user.class}
@@ -306,7 +306,7 @@ const generateWeeklyReport = async () => {
   try {
     const trajectory = calculateTrajectory();
 
-    const prompt = `You are Lumora's Weekly Growth Reporter.
+    const prompt = `You are AuraTrack's Weekly Growth Reporter.
 
 Student: ${user.name}
 Goal: ${user.goal}
@@ -397,7 +397,7 @@ const addSeeds = async (amount: number, reason: string = "") => {
 
   const updatedUser = { ...user, seeds: newSeeds };
   setUser(updatedUser);
-  localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+  localStorage.setItem('AuraTrackUser', JSON.stringify(updatedUser));
 
   if (reason) {
     setHiddenDiscoveries(prev => [...prev, `+${amount} Seeds: ${reason}`]);
@@ -515,7 +515,7 @@ const calculateTrajectory = () => {
     };
 
     setUser(finalUser);
-    localStorage.setItem('lumoraUser', JSON.stringify(finalUser));
+    localStorage.setItem('AuraTrackUser', JSON.stringify(finalUser));
     setCurrentPage('dashboard');
   };
 
@@ -548,7 +548,7 @@ const calculateTrajectory = () => {
 
     const newUser = { ...user, streak: 0, seeds: 0 };
     setUser(newUser);
-    localStorage.setItem('lumoraUser', JSON.stringify(newUser));
+    localStorage.setItem('AuraTrackUser', JSON.stringify(newUser));
     alert("Profile Created!");
     setCurrentPage('dashboard');
   };
@@ -616,7 +616,7 @@ const calculateTrajectory = () => {
 
     const updatedUser = { ...user, streak: newStreak, seeds: newSeeds };
     setUser(updatedUser);
-    localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+    localStorage.setItem('AuraTrackUser', JSON.stringify(updatedUser));
 
     await checkStreakMilestones(newStreak);
 
@@ -673,7 +673,7 @@ const generateFutureVision = async () => {
     // Calculate current trajectory
     const trajectory = calculateTrajectory();
 
-    const prompt = `You are Lumora's Future Vision guide.
+    const prompt = `You are AuraTrack's Future Vision guide.
 
 Student Goal: ${user.goal}
 Class: ${user.class}
@@ -722,7 +722,7 @@ Keep the whole response under 140 words. Be honest, warm and specific.`;
     setSuggestedGoal("");
 
     try {
-      const prompt = `You are Lumora's Career Guide for a Class ${user.class} student.
+      const prompt = `You are AuraTrack's Career Guide for a Class ${user.class} student.
 
 Analyze this student using their real data (goal, reflections, patterns, streak, study style).
 
@@ -772,7 +772,7 @@ SUGGESTED_GOAL: New Goal Here`;
 
     const updatedUser = { ...user, goal: newGoal };
     setUser(updatedUser);
-    localStorage.setItem('lumoraUser', JSON.stringify(updatedUser));
+    localStorage.setItem('AuraTrackUser', JSON.stringify(updatedUser));
     setSuggestedGoal("");
     alert("Goal updated successfully!");
   };
@@ -810,7 +810,7 @@ const generateTodayCareerStep = async () => {
     }
 
     // 3. Better prompt with history
-    const prompt = `You are Lumora's Career Coach for a Class ${user.class} student.
+    const prompt = `You are AuraTrack's Career Coach for a Class ${user.class} student.
 
 Student's Big Goal: ${user.goal}
 
@@ -965,8 +965,8 @@ Rules:
               {currentPage === 'login' && (
                 <div style={{ width: '100%', maxWidth: '420px', background: colors.white, borderRadius: '24px', padding: '48px 40px', boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }}>
                   <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                    <img src="/logo.png" alt="Lumora" style={{ height: '56px', marginBottom: '12px' }} />
-                    <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>Welcome to Lumora</h1>
+                    <img src="/logo.png" alt="AuraTrack" style={{ height: '56px', marginBottom: '12px' }} />
+                    <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: colors.primary }}>Welcome to AuraTrack</h1>
                     <p style={{ color: '#6b7280', marginTop: '8px' }}>Your AI Growth Companion</p>
                   </div>
                   <input type="text" placeholder="User ID" value={loginId} onChange={e => setLoginId(e.target.value)} style={inputStyle} />
@@ -982,7 +982,7 @@ Rules:
               {currentPage === 'onboarding' && (
                 <div style={{ width: '100%', maxWidth: '520px', background: colors.white, borderRadius: '24px', padding: '48px 40px', boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }}>
                   <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                    <img src="/logo.png" alt="Lumora" style={{ height: '48px', marginBottom: '12px' }} />
+                    <img src="/logo.png" alt="AuraTrack" style={{ height: '48px', marginBottom: '12px' }} />
                     <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: colors.primary }}>Create Your Profile</h1>
                   </div>
                   <input type="text" placeholder="Unique User ID" value={user.id} onChange={e => setUser(p => ({...p, id: e.target.value}))} style={inputStyle} />
@@ -1006,8 +1006,8 @@ Rules:
             <>
               <aside className="sidebar">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '24px 20px', borderBottom: '1px solid #f3e8d8' }}>
-                  <img src="/logo.png" alt="Lumora" style={{ height: '40px' }} />
-                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary }}>Lumora</h1>
+                  <img src="/logo.png" alt="AuraTrack" style={{ height: '40px' }} />
+                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: colors.primary }}>AuraTrack</h1>
                 </div>
                 <nav style={{ flex: 1, padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto' }}>
                   {navItems.map(item => (
@@ -1032,8 +1032,8 @@ Rules:
 
               <div className="mobile-topbar">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <img src="/logo.png" alt="Lumora" style={{ height: '32px' }} />
-                  <span style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary }}>Lumora</span>
+                  <img src="/logo.png" alt="AuraTrack" style={{ height: '32px' }} />
+                  <span style={{ fontSize: '20px', fontWeight: 'bold', color: colors.primary }}>AuraTrack</span>
                 </div>
                 <button onClick={() => setIsMobileMenuOpen(true)} style={{ background: '#fff7ed', border: 'none', borderRadius: '10px', padding: '8px 12px', fontSize: '20px', cursor: 'pointer', color: colors.primary }}>☰</button>
               </div>
@@ -1042,8 +1042,8 @@ Rules:
                 <div className="mobile-menu-overlay" onClick={() => setIsMobileMenuOpen(false)}>
                   <div className="mobile-sidebar" onClick={e => e.stopPropagation()}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-                      <img src="/logo.png" alt="Lumora" style={{ height: '40px' }} />
-                      <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: colors.primary }}>Lumora</h1>
+                      <img src="/logo.png" alt="AuraTrack" style={{ height: '40px' }} />
+                      <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: colors.primary }}>AuraTrack</h1>
                     </div>
                     <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {navItems.map(item => (
