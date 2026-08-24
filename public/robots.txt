@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://lumora-tan-eight.vercel.app/sitemap.xml
+Sitemap: https://ur-aura-track.vercel.app/sitemap.xml
