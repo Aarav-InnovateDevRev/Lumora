@@ -25,6 +25,7 @@ function App() {
   const [loginId, setLoginId] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [showAccountPanel, setShowAccountPanel] = useState(false);
 
   const [user, setUser] = useState({
     id: "", name: "", class: "", goal: "", preferredTone: "Friendly",
