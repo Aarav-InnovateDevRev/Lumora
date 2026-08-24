@@ -470,19 +470,22 @@ const calculateTrajectory = () => {
 };
 
   // ==================== LOGIN ====================
-  const handleLogin = async () => {
-    setLoginError("");
-    const { data, error } = await supabase.from('users').select('*').eq('id', loginId).maybeSingle();
+const handleLogin = async () => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', loginId.trim())
+    .maybeSingle();
 
-    if (error || !data) {
-      setLoginError("Invalid User ID");
-      return;
-    }
+  if (error || !data) {
+    setLoginError("Account not found");
+    return;
+  }
 
-    if (data.password && data.password !== loginPassword) {
-      setLoginError("Wrong Password");
-      return;
-    }
+  if (data.password !== loginPassword) {
+    setLoginError("Wrong password");
+    return;
+  }
 
     const { data: profile } = await supabase.from('growth_profile').select('*').eq('user_id', loginId).maybeSingle();
 
@@ -520,38 +523,57 @@ const calculateTrajectory = () => {
   };
 
   // ==================== ONBOARDING ====================
-  const finishOnboarding = async () => {
-    if (!user.id || !user.name || !user.class || !user.goal) {
-      alert("Please fill all fields!");
-      return;
-    }
+const finishOnboarding = async () => {
+  if (!user.id || !user.name || !user.password) {
+    alert("Please fill User ID, Name and Password");
+    return;
+  }
 
-    const { error } = await supabase.from('users').upsert([{
-      id: user.id,
-      name: user.name,
-      class: user.class,
-      goal: user.goal,
-      preferred_tone: user.preferredTone,
-      student_type: user.studentType,
-      study_feeling: user.studyFeeling,
-      password: user.password || "123456"
-    }], { onConflict: 'id' });
+  // STEP A: check if ID already exists
+  const { data: existing, error: checkError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('id', user.id.trim())
+    .maybeSingle();
 
-    if (error) {
-      alert(`Error: ${error.message}`);
-      return;
-    }
+  if (checkError) {
+    alert("Could not check User ID. Try again.");
+    return;
+  }
 
-    await supabase.from('growth_profile').insert([{
-      user_id: user.id, total_seeds: 0, current_streak: 0, longest_streak: 0, growth_score: 0
-    }]);
+  if (existing) {
+    alert("This User ID is already taken. Choose another one.");
+    return;
+  }
 
-    const newUser = { ...user, streak: 0, seeds: 0 };
-    setUser(newUser);
-    localStorage.setItem('AuraTrackUser', JSON.stringify(newUser));
-    alert("Profile Created!");
-    setCurrentPage('dashboard');
-  };
+  // STEP B: create only if ID is free
+  const { error } = await supabase.from('users').insert([{
+    id: user.id.trim(),
+    name: user.name,
+    class: user.class,
+    goal: user.goal,
+    preferred_tone: user.preferredTone || "Friendly",
+    student_type: user.studentType || "Student",
+    study_feeling: user.studyFeeling,
+    password: user.password
+  }]);
+
+  if (error) {
+    alert("Could not create account: " + error.message);
+    return;
+  }
+
+  // optional growth profile
+  await supabase.from('growth_profile').upsert([{
+    user_id: user.id.trim(),
+    total_seeds: 0,
+    current_streak: 0,
+    longest_streak: 0,
+    growth_score: 0
+  }], { onConflict: 'user_id' });
+
+  setCurrentPage('dashboard');
+};
 
   // ==================== SAVE REFLECTION ====================
   const saveReflection = async () => {
